@@ -12,6 +12,7 @@ interface PerformanceChartProps {
   series: any[];
   options?: ApexOptions;
   height?: number;
+  yAxisFormat?: "percentage" | "number";
 }
 
 const PerformanceChart: React.FC<PerformanceChartProps> = ({
@@ -19,6 +20,7 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
   series,
   options,
   height = 350,
+  yAxisFormat
 }) => {
   const { theme, resolvedTheme } = useTheme();
   const [chartOptions, setChartOptions] = useState<ApexOptions>({});
@@ -50,18 +52,24 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
         labels: { style: { colors: textColor } },
       },
       yaxis: {
-        labels: { style: { colors: textColor } },
+        labels: {
+          style: { colors: textColor },
+          formatter: yAxisFormat === "percentage" ? (val: number) => val + "%" : undefined,
+        },
       },
       legend: {
         labels: { colors: textColor },
       },
       tooltip: {
         theme: isDark ? "dark" : "light",
+        y: yAxisFormat === "percentage" ? {
+          formatter: (val: number) => val + "%"
+        } : (options?.tooltip?.y ? { ...options.tooltip.y } : undefined),
       },
       ...options, // Allow overriding
     };
     setChartOptions(newOptions);
-  }, [resolvedTheme, options]);
+  }, [resolvedTheme, options, yAxisFormat]);
 
   return (
     <div className="w-full h-full min-h-[200px]">

@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import PerformanceChart from "@/components/performance-chart";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from 'next/link';
-import { ArrowRight, BarChart3, Microscope } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { HoverEffect } from "@/components/ui/card-hover-effect";
+import { Trophy, CheckCircle, TrendingUp, AlertTriangle } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 // Function to read data from JSON files
 async function getData() {
@@ -31,224 +31,192 @@ async function getData() {
 export default async function Dashboard() {
   const { metrics1, metrics2 } = await getData();
 
-  // Comparison Data
+  // Comparison Data: Only Model 1 and Model 2
   const models = [
     { 
       id: 'model-1', 
       name: 'ImprovedDenseNet121', 
+      shortName: 'DenseNet121',
+      description: 'High accuracy research-based architecture.',
       status: 'Completed', 
       accuracy: metrics1 ? metrics1.accuracy : 0,
       f1: metrics1 ? metrics1.f1_score : 0,
       precision: metrics1 ? metrics1.precision : 0,
-      recall: metrics1 ? metrics1.recall : 0
+      recall: metrics1 ? metrics1.recall : 0,
+      link: '/model-1'
     },
     { 
       id: 'model-2', 
-      name: metrics2 ? 'CustomMobileNetV2' : 'Model 2 (Pending)', 
-      status: metrics2 ? 'Completed' : 'In Development', 
+      name: metrics2 ? 'CustomMobileNetV2' : 'CustomMobileNetV2 (Training...)', 
+      shortName: 'MobileNetV2',
+      description: 'Lightweight model optimized for speed and texture analysis.',
+      status: metrics2 ? 'Completed' : 'Training', 
       accuracy: metrics2 ? metrics2.accuracy : 0,
       f1: metrics2 ? metrics2.f1_score : 0,
       precision: metrics2 ? metrics2.precision : 0,
-      recall: metrics2 ? metrics2.recall : 0
-    },
-    { 
-      id: 'model-3', 
-      name: 'Model 3 (Pending)', 
-      status: 'In Development', 
-      accuracy: 0,
-      f1: 0,
-      precision: 0,
-      recall: 0
+      recall: metrics2 ? metrics2.recall : 0,
+      link: '/model-2'
     }
   ];
 
-  // Chart Data: Accuracy Comparison
-  const accuracySeries = [{
-    name: 'Accuracy',
-    data: models.map(m => parseFloat((m.accuracy * 100).toFixed(2)))
-  }];
+  // Determine Best Model
+  const bestModel = models.reduce((prev, current) => (prev.f1 > current.f1) ? prev : current);
+  const bestModelName = bestModel.f1 > 0 ? bestModel.name : "N/A";
 
-  const accuracyOptions: any = {
-    chart: { type: 'bar', toolbar: { show: false } },
-    plotOptions: {
-      bar: { borderRadius: 4, columnWidth: '50%', distributed: true }
+  // Chart Data: Grouped Bar Chart for Comprehensive Comparison
+  const comparisonSeries = [
+    {
+      name: 'Accuracy',
+      data: models.map(m => parseFloat((m.accuracy * 100).toFixed(2)))
     },
-    colors: [
-      models[0].status === 'Completed' ? '#3b82f6' : '#94a3b8',
-      models[1].status === 'Completed' ? '#3b82f6' : '#94a3b8',
-      models[2].status === 'Completed' ? '#3b82f6' : '#94a3b8'
-    ],
+    {
+      name: 'Precision',
+      data: models.map(m => parseFloat((m.precision * 100).toFixed(2)))
+    },
+    {
+      name: 'Recall',
+      data: models.map(m => parseFloat((m.recall * 100).toFixed(2)))
+    },
+    {
+      name: 'F1-Score',
+      data: models.map(m => parseFloat((m.f1 * 100).toFixed(2)))
+    }
+  ];
+
+  const comparisonOptions: any = {
+    chart: { type: 'bar', toolbar: { show: false }, stacked: false },
+    plotOptions: {
+      bar: { horizontal: false, columnWidth: '60%', borderRadius: 4 }
+    },
+    dataLabels: { enabled: false },
+    stroke: { show: true, width: 2, colors: ['transparent'] },
     xaxis: {
-      categories: models.map(m => m.name),
-      labels: { style: { fontSize: '12px' } }
+      categories: models.map(m => m.shortName),
+      labels: { style: { fontSize: '14px', fontWeight: 'bold' } }
     },
     yaxis: {
       max: 100,
-      title: { text: 'Accuracy (%)' }
+      title: { text: 'Score (%)' }
     },
-    legend: { show: false }
+    fill: { opacity: 1 },
+    theme: {
+        monochrome: { enabled: false }, // Disable monochrome to use colors
+        mode: 'dark' 
+    },
+    colors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'], // Blue, Green, Amber, Violet
+    legend: { position: 'top' },
+    tooltip: {
+      y: {
+      }
+    }
   };
 
-  // Chart Data: F1-Score Comparison
-  const f1Series = [{
-    name: 'F1-Score',
-    data: models.map(m => parseFloat((m.f1 * 100).toFixed(2)))
-  }];
-
-  const f1Options: any = {
-    chart: { type: 'bar', toolbar: { show: false } },
-    plotOptions: {
-      bar: { borderRadius: 4, columnWidth: '50%', distributed: true }
-    },
-    colors: [
-      models[0].status === 'Completed' ? '#10b981' : '#94a3b8',
-      models[1].status === 'Completed' ? '#10b981' : '#94a3b8',
-      models[2].status === 'Completed' ? '#10b981' : '#94a3b8'
-    ],
-    xaxis: {
-      categories: models.map(m => m.name),
-      labels: { style: { fontSize: '12px' } }
-    },
-    yaxis: {
-      max: 100,
-      title: { text: 'F1-Score (%)' }
-    },
-    legend: { show: false }
-  };
-
-  // Calculate statistics
-  const completedModels = models.filter(m => m.status === 'Completed').length;
-  const bestModel = models.reduce((prev, current) => (prev.accuracy > current.accuracy) ? prev : current);
+  // Hover Effect Items
+  const projectItems = models.map(m => ({
+    title: m.name,
+    description: m.description,
+    link: m.link
+  }));
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-neutral-950 text-foreground p-4 md:p-8 font-sans transition-colors duration-300 relative overflow-hidden">
+      
+      {/* Background Ambience */}
+      <div className="absolute inset-0 w-full h-full bg-neutral-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,130,246,0.15),rgba(255,255,255,0))] pointer-events-none" />
       
       {/* Header */}
-      <header className="mb-10 text-center relative">
-        <h1 className="text-4xl font-bold mb-2 uppercase tracking-widest border-b-4 border-foreground inline-block pb-2">
+      <header className="mb-12 text-center relative z-10">
+        <div className="inline-block p-2 px-4 rounded-full bg-blue-500/10 border border-blue-500/20 mb-4 backdrop-blur-sm">
+            <span className="text-blue-400 text-xs font-bold tracking-widest uppercase">Salmon vs Trout Classification</span>
+        </div>
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
           Project Dashboard
         </h1>
-        <p className="text-muted-foreground mt-2">Salmon & Trout Classification Model Comparison</p>
+        <p className="text-neutral-400 max-w-2xl mx-auto text-lg">
+          Comparative analysis of deep learning models for fish classification.
+        </p>
       </header>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <Card className="bg-card border-primary/20 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Best Performing Model</CardTitle>
-                <Microscope className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{bestModel.accuracy > 0 ? bestModel.name : 'N/A'}</div>
-                <p className="text-xs text-muted-foreground">
-                    Accuracy: {bestModel.accuracy > 0 ? (bestModel.accuracy * 100).toFixed(2) + '%' : 'N/A'}
-                </p>
-            </CardContent>
-        </Card>
-        <Card className="bg-card border-primary/20 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Models Developed</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{completedModels} / 3</div>
-                <p className="text-xs text-muted-foreground">
-                    Target: 3 Models Comparison
-                </p>
-            </CardContent>
-        </Card>
-        <Card className="bg-card border-primary/20 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Current Status</CardTitle>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">Phase {completedModels} Complete</div>
-                <p className="text-xs text-muted-foreground">
-                    Developing Model {completedModels + 1}
-                </p>
-            </CardContent>
-        </Card>
-      </div>
-
-      {/* Comparison Section */}
-      <section className="mb-16">
-        <div className="flex items-center gap-2 mb-6">
-           <span className="bg-primary text-primary-foreground px-3 py-1 text-sm font-bold rounded-sm">COMPARISON</span>
-           <h2 className="text-2xl font-bold">Model Performance Comparison</h2>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Accuracy Chart */}
-            <Card className="bg-card shadow-sm">
-                <CardHeader>
-                    <CardTitle>Accuracy Comparison</CardTitle>
+      {/* Quick Stats / Best Model */}
+      <section className="mb-16 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="bg-neutral-900/50 border-neutral-800 backdrop-blur-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-neutral-400">Best Performing Model</CardTitle>
+                    <Trophy className="h-4 w-4 text-yellow-500" />
                 </CardHeader>
                 <CardContent>
-                    <PerformanceChart type="bar" series={accuracySeries} options={accuracyOptions} height={300} />
+                    <div className="text-2xl font-bold text-white">{bestModelName}</div>
+                    <p className="text-xs text-neutral-500 mt-1">Based on F1-Score</p>
                 </CardContent>
             </Card>
-
-            {/* F1 Chart */}
-            <Card className="bg-card shadow-sm">
-                <CardHeader>
-                    <CardTitle>F1-Score Comparison</CardTitle>
+            <Card className="bg-neutral-900/50 border-neutral-800 backdrop-blur-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-neutral-400">Highest Accuracy</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                    <PerformanceChart type="bar" series={f1Series} options={f1Options} height={300} />
+                    <div className="text-2xl font-bold text-white">{(bestModel.accuracy * 100).toFixed(2)}%</div>
+                    <p className="text-xs text-neutral-500 mt-1">Achieved by {bestModel.shortName}</p>
+                </CardContent>
+            </Card>
+            <Card className="bg-neutral-900/50 border-neutral-800 backdrop-blur-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-neutral-400">Project Status</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-white">2 Models</div>
+                    <p className="text-xs text-neutral-500 mt-1">Ready for Comparison</p>
                 </CardContent>
             </Card>
         </div>
+      </section>
 
-        {/* Detailed Table */}
-        <Card className="bg-card border-2 border-primary shadow-none rounded-none overflow-hidden">
-            <CardHeader className="bg-muted border-b-2 border-primary">
-              <CardTitle className="text-xl font-bold">Detailed Metrics Table</CardTitle>
+      {/* Model Navigation with Hover Effect */}
+      <section className="mb-16 relative z-10">
+        <h2 className="text-2xl font-bold mb-6 text-white border-l-4 border-blue-500 pl-4">Explore Models</h2>
+        <HoverEffect items={projectItems} />
+      </section>
+
+      {/* Comprehensive Comparison Chart */}
+      <section className="mb-16 relative z-10">
+        <h2 className="text-2xl font-bold mb-6 text-white border-l-4 border-purple-500 pl-4">Performance Comparison</h2>
+        <Card className="bg-neutral-900/50 border-neutral-800 backdrop-blur-md">
+            <CardHeader>
+                <CardTitle className="text-white">Metrics Overview</CardTitle>
+                <CardDescription>Side-by-side comparison of Accuracy, Precision, Recall, and F1-Score.</CardDescription>
             </CardHeader>
-            <CardContent className="p-0 overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-primary text-primary-foreground uppercase">
-                  <tr>
-                    <th className="px-6 py-4">Model Name</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Accuracy</th>
-                    <th className="px-6 py-4">Precision</th>
-                    <th className="px-6 py-4">Recall</th>
-                    <th className="px-6 py-4">F1 Score</th>
-                    <th className="px-6 py-4">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {models.map((model, index) => (
-                    <tr key={index} className={model.status === 'Completed' ? 'bg-background' : 'bg-muted/30'}>
-                        <td className="px-6 py-4 font-bold">{model.name}</td>
-                        <td className="px-6 py-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                model.status === 'Completed' 
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100' 
-                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-100'
-                            }`}>
-                                {model.status}
-                            </span>
-                        </td>
-                        <td className="px-6 py-4 font-mono">{model.accuracy > 0 ? (model.accuracy * 100).toFixed(2) + '%' : '-'}</td>
-                        <td className="px-6 py-4 font-mono">{model.precision > 0 ? (model.precision * 100).toFixed(2) + '%' : '-'}</td>
-                        <td className="px-6 py-4 font-mono">{model.recall > 0 ? (model.recall * 100).toFixed(2) + '%' : '-'}</td>
-                        <td className="px-6 py-4 font-mono">{model.f1 > 0 ? (model.f1 * 100).toFixed(2) + '%' : '-'}</td>
-                        <td className="px-6 py-4">
-                            {model.status === 'Completed' || model.id === 'model-2' ? (
-                                <Link href={`/${model.id}`}>
-                                    <Button variant="outline" size="sm">View Details</Button>
-                                </Link>
-                            ) : (
-                                <span className="text-muted-foreground text-xs">Coming Soon</span>
-                            )}
-                        </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <CardContent>
+                <div className="h-[400px] w-full">
+                    <PerformanceChart type="bar" series={comparisonSeries} options={comparisonOptions} height={400} yAxisFormat="percentage" />
+                </div>
             </CardContent>
+        </Card>
+      </section>
+
+      {/* Conclusion & Analysis */}
+      <section className="mb-16 relative z-10">
+        <h2 className="text-2xl font-bold mb-6 text-white border-l-4 border-green-500 pl-4">Experimental Conclusion</h2>
+        <Card className="bg-neutral-900/50 border-neutral-800 backdrop-blur-md p-6">
+            <div className="prose prose-invert max-w-none">
+                <h3 className="text-xl font-semibold text-blue-400 mb-4">Analysis Summary</h3>
+                <ul className="list-disc pl-5 space-y-2 text-neutral-300">
+                    <li>
+                        <strong className="text-white">Model Selection:</strong> Based on current experiments, <strong className="text-yellow-400">{bestModelName}</strong> is the superior model with an F1-Score of <strong>{(bestModel.f1 * 100).toFixed(2)}%</strong>.
+                    </li>
+                    <li>
+                        <strong className="text-white">Trade-offs:</strong> 
+                        {metrics1 && metrics2 && metrics1.accuracy > metrics2.accuracy ? 
+                            " ImprovedDenseNet121 offers higher overall accuracy, making it suitable for general classification tasks." : 
+                            " CustomMobileNetV2 demonstrates competitive performance with likely faster inference speeds due to its lightweight architecture."
+                        }
+                    </li>
+                    <li>
+                        <strong className="text-white">Recommendation:</strong> For deployment where accuracy is paramount, use <strong>{bestModelName}</strong>. If speed on edge devices is critical, consider <strong>CustomMobileNetV2</strong> if its accuracy is within acceptable range.
+                    </li>
+                </ul>
+            </div>
         </Card>
       </section>
 

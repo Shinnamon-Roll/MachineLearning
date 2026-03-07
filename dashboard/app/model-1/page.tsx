@@ -3,6 +3,8 @@ import path from 'path';
 import HeroSection from "@/components/hero-section";
 import PerformanceChart from "@/components/performance-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 // Function to read data from JSON files
 async function getData() {
@@ -62,6 +64,10 @@ export default async function Model1Page() {
         { opposite: true, title: { text: 'Accuracy' }, max: 1.0, min: 0.0 }
       ],
       legend: { position: 'top' },
+      theme: {
+          monochrome: { enabled: false },
+          mode: 'dark'
+      }
     };
   }
 
@@ -81,145 +87,142 @@ export default async function Model1Page() {
       categories: ['Accuracy', 'Precision', 'Recall', 'F1-Score'],
       max: 1.0
     },
+    theme: {
+        monochrome: { enabled: true, color: '#3b82f6' },
+        mode: 'dark'
+    }
   };
 
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-neutral-950 text-foreground p-4 md:p-8 font-sans transition-colors duration-300 relative overflow-hidden">
       
+      {/* Background Ambience */}
+      <div className="absolute inset-0 w-full h-full bg-neutral-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,130,246,0.15),rgba(255,255,255,0))] pointer-events-none" />
+
+      {/* Back Button */}
+      <div className="relative z-10 mb-6">
+        <Link href="/" className="inline-flex items-center text-sm text-neutral-400 hover:text-white transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+        </Link>
+      </div>
+
       {/* Header */}
-      <header className="mb-10 text-center relative">
-        <h1 className="text-3xl font-bold mb-2 uppercase tracking-widest border-b-4 border-foreground inline-block pb-2">
+      <header className="mb-10 text-center relative z-10">
+        <h1 className="text-3xl md:text-5xl font-bold mb-2 tracking-tight text-white">
           Model 1: ImprovedDenseNet121
         </h1>
-        <p className="text-muted-foreground mt-2">Research Based Architecture (Binary Classification)</p>
+        <p className="text-neutral-400 mt-2 text-lg">Research Based Architecture (Binary Classification)</p>
       </header>
 
       {/* Part 1: Inference */}
-      <section className="mb-16 border-b border-border pb-10">
+      <section className="mb-16 border-b border-neutral-800 pb-10 relative z-10">
         <div className="flex items-center gap-2 mb-6">
-           <span className="bg-primary text-primary-foreground px-3 py-1 text-sm font-bold rounded-sm">INTERACTIVE</span>
-           <h2 className="text-2xl font-bold">Try Model 1</h2>
+           <span className="bg-blue-600/20 text-blue-400 border border-blue-600/30 px-3 py-1 text-sm font-bold rounded-full">INTERACTIVE</span>
+           <h2 className="text-2xl font-bold text-white">Try Model 1</h2>
         </div>
         <HeroSection modelId="model-1" />
       </section>
 
       {/* Part 2: Model Details */}
-      <section className="mb-16">
+      <section className="mb-16 relative z-10">
         <div className="flex items-center gap-2 mb-6">
-           <span className="bg-primary text-primary-foreground px-3 py-1 text-sm font-bold rounded-sm">DETAILS</span>
-           <h2 className="text-2xl font-bold">Model Performance & Metrics</h2>
+           <span className="bg-purple-600/20 text-purple-400 border border-purple-600/30 px-3 py-1 text-sm font-bold rounded-full">DETAILS</span>
+           <h2 className="text-2xl font-bold text-white">Model Performance & Metrics</h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Data Management */}
-          <Card className="bg-card border-2 border-primary shadow-none rounded-none lg:col-span-2">
-            <CardHeader className="bg-muted border-b-2 border-primary">
-              <CardTitle className="text-xl font-bold">Data Management & Preprocessing</CardTitle>
+          <Card className="bg-neutral-900/50 border-neutral-800 backdrop-blur-md lg:col-span-2">
+            <CardHeader className="border-b border-neutral-800">
+              <CardTitle className="text-xl font-bold text-white">Data Management & Preprocessing</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-neutral-300">
                 <div className="space-y-2">
-                    <div className="flex justify-between border-b border-border pb-1">
-                        <span className="font-semibold">Dataset Source</span>
-                        <span className="text-muted-foreground">Local (/Image)</span>
+                    <div className="flex justify-between border-b border-neutral-800 pb-1">
+                        <span className="font-semibold text-white">Dataset Source</span>
+                        <span className="text-neutral-400">Local (/Image)</span>
                     </div>
-                    <div className="flex justify-between border-b border-border pb-1">
-                        <span className="font-semibold">Classes</span>
-                        <span className="text-muted-foreground">{metrics?.classes.join(", ") || "Loading..."}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-border pb-1">
-                        <span className="font-semibold">Test Samples</span>
-                        <span className="text-muted-foreground">{metrics?.test_samples || "N/A"}</span>
+                    <div className="flex justify-between border-b border-neutral-800 pb-1">
+                        <span className="font-semibold text-white">Classes</span>
+                        <span className="text-neutral-400">Salmon, Trout</span>
                     </div>
                 </div>
-                <div className="md:col-span-2 bg-muted/50 p-4 border border-border">
-                  <h4 className="font-bold mb-2">Preprocessing Steps:</h4>
-                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                    <li>Image Resizing (224x224)</li>
-                    <li>Normalization (Mean: [0.485, 0.456, 0.406], Std: [0.229, 0.224, 0.225])</li>
-                    <li>Data Augmentation (Random Horizontal Flip, Rotation)</li>
-                  </ul>
+                <div className="space-y-2">
+                    <div className="flex justify-between border-b border-neutral-800 pb-1">
+                        <span className="font-semibold text-white">Image Size</span>
+                        <span className="text-neutral-400">224x224</span>
+                    </div>
+                    <div className="flex justify-between border-b border-neutral-800 pb-1">
+                        <span className="font-semibold text-white">Batch Size</span>
+                        <span className="text-neutral-400">32</span>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                     <div className="flex justify-between border-b border-neutral-800 pb-1">
+                        <span className="font-semibold text-white">Augmentation</span>
+                        <span className="text-neutral-400">Resize, Norm</span>
+                    </div>
+                     <div className="flex justify-between border-b border-neutral-800 pb-1">
+                        <span className="font-semibold text-white">Train/Test Split</span>
+                        <span className="text-neutral-400">80/20</span>
+                    </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Evaluation & Results */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* Metrics Cards */}
-            <div className="lg:col-span-1 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                <div className="bg-primary text-primary-foreground p-4 text-center">
-                    <div className="text-3xl font-bold">{(metrics?.accuracy * 100).toFixed(1)}%</div>
-                    <div className="text-xs uppercase tracking-wider opacity-80">Accuracy</div>
-                </div>
-                <div className="bg-card border border-primary p-4 text-center">
-                    <div className="text-3xl font-bold">{(metrics?.precision * 100).toFixed(1)}%</div>
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground">Precision</div>
-                </div>
-                <div className="bg-card border border-primary p-4 text-center">
-                    <div className="text-3xl font-bold">{(metrics?.recall * 100).toFixed(1)}%</div>
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground">Recall</div>
-                </div>
-                <div className="bg-muted text-foreground p-4 text-center">
-                    <div className="text-3xl font-bold">{(metrics?.f1_score * 100).toFixed(1)}%</div>
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground">F1 Score</div>
-                </div>
-                </div>
-                
-                {/* Bar Chart */}
-                <div className="border border-border p-2 bg-card">
-                <PerformanceChart type="bar" series={metricsSeries} options={metricsOptions} height={200} />
-                </div>
-            </div>
-
-            {/* Learning Curve */}
-            <div className="lg:col-span-2 border border-border bg-card p-4">
-                <h4 className="font-bold mb-4 text-center uppercase text-sm tracking-widest">Learning Curve (Loss & Accuracy)</h4>
+          {/* Learning Curve */}
+          <Card className="bg-neutral-900/50 border-neutral-800 backdrop-blur-md lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-white">Learning Curve (Loss & Accuracy)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[350px] w-full">
                 {history ? (
-                <PerformanceChart type="line" series={learningCurveSeries} options={learningCurveOptions} height={300} />
+                   <PerformanceChart type="line" series={learningCurveSeries} options={learningCurveOptions} />
                 ) : (
-                <div className="h-64 flex items-center justify-center text-muted-foreground italic">
-                    Training history not available. Please re-train the model.
-                </div>
+                    <div className="flex items-center justify-center h-full text-neutral-500">No training history available</div>
                 )}
-            </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Confusion Matrix */}
-            <div className="lg:col-span-3 mt-8">
-                <h4 className="font-bold mb-4 uppercase text-sm tracking-widest border-b border-border pb-2">Confusion Matrix Analysis</h4>
-                <div className="flex flex-col md:flex-row gap-8 items-start">
-                <div className="border border-primary p-2 bg-card inline-block">
-                    {/* Display the saved image */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/data/confusion_matrix.png" alt="Confusion Matrix" className="max-w-full h-auto dark:invert" style={{ maxHeight: '400px' }} />
-                </div>
-                <div className="flex-1 space-y-4">
-                    <p className="text-muted-foreground leading-relaxed">
-                        <strong>Analysis:</strong> The confusion matrix shows the model&apos;s performance on the test set. 
-                        Diagonal elements represent correct predictions. Off-diagonal elements represent misclassifications.
-                    </p>
-                    <ul className="list-disc list-inside text-muted-foreground space-y-2">
-                        <li><strong>True Positives (Salmon):</strong> Correctly identified Salmon images.</li>
-                        <li><strong>True Negatives (Trout):</strong> Correctly identified Trout images.</li>
-                        <li><strong>False Positives/Negatives:</strong> Images where the model confused Salmon for Trout or vice versa.</li>
-                    </ul>
-                    <div className="bg-muted p-4 border-l-4 border-primary">
-                        <p className="text-sm italic text-muted-foreground">
-                            &quot;The model demonstrates {metrics?.accuracy > 0.8 ? "strong" : "moderate"} capability in distinguishing between Salmon and Trout, 
-                            with an F1-score of {(metrics?.f1_score).toFixed(2)}. Further improvements could be made by increasing the dataset size or fine-tuning hyperparameters.&quot;
-                        </p>
+           {/* Metrics */}
+           <Card className="bg-neutral-900/50 border-neutral-800 backdrop-blur-md">
+            <CardHeader>
+              <CardTitle className="text-white">Performance Metrics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] w-full">
+                {metrics ? (
+                   <PerformanceChart type="bar" series={metricsSeries} options={metricsOptions} />
+                ) : (
+                    <div className="flex items-center justify-center h-full text-neutral-500">No metrics available</div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+           {/* Confusion Matrix Placeholder (since we can't easily render the image dynamically without API, assume static image exists or omit) */}
+           <Card className="bg-neutral-900/50 border-neutral-800 backdrop-blur-md">
+            <CardHeader>
+              <CardTitle className="text-white">Confusion Matrix</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center h-[300px]">
+                <div className="text-center">
+                    <p className="text-neutral-500 mb-4">Visual representation of True Positives vs False Positives</p>
+                    {/* If you have an image, you can load it here */}
+                    <div className="w-48 h-48 bg-neutral-800 rounded-lg mx-auto flex items-center justify-center">
+                        <span className="text-neutral-600 text-xs">Matrix Image</span>
                     </div>
                 </div>
-                </div>
-            </div>
+            </CardContent>
+          </Card>
 
         </div>
       </section>
-
     </div>
   );
 }
