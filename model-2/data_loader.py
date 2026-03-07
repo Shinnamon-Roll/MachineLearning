@@ -2,8 +2,22 @@ import os
 from PIL import Image
 import numpy as np
 import cv2
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision import transforms
+
+class SubsetWithTransform(Dataset):
+    def __init__(self, subset, transform=None):
+        self.subset = subset
+        self.transform = transform
+        
+    def __getitem__(self, index):
+        x, y, path = self.subset[index]
+        if self.transform:
+            x = self.transform(x)
+        return x, y, path
+        
+    def __len__(self):
+        return len(self.subset)
 
 class CLAHETransform:
     """
@@ -54,9 +68,10 @@ class SalmonTroutDataset(Dataset):
         Args:
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied on a sample.
-            mode (string): 'train' or 'test'. 
+            mode (string): 'train', 'test', or 'all'. 
                            'train' will combine 'Salmon Train', 'Salmon valid' and 'Trout train'.
                            'test' will combine 'Salmon Test' and 'Trout test'.
+                           'all' will load all available images.
         """
         self.root_dir = root_dir
         self.transform = transform
@@ -71,7 +86,14 @@ class SalmonTroutDataset(Dataset):
         salmon_base = os.path.join(root_dir, 'Salmon!')
         trout_base = os.path.join(root_dir, 'Trout!')
         
-        if mode == 'train':
+        if mode == 'all':
+            # Load everything
+            self._add_images_from_folder(os.path.join(salmon_base, 'Salmon Train'), 0)
+            self._add_images_from_folder(os.path.join(salmon_base, 'Salmon valid'), 0)
+            self._add_images_from_folder(os.path.join(salmon_base, 'Salmon Test'), 0)
+            self._add_images_from_folder(os.path.join(trout_base, 'Trout train'), 1)
+            self._add_images_from_folder(os.path.join(trout_base, 'Trout test'), 1)
+        elif mode == 'train':
             # Salmon Training Data
             self._add_images_from_folder(os.path.join(salmon_base, 'Salmon Train'), 0)
             self._add_images_from_folder(os.path.join(salmon_base, 'Salmon valid'), 0)
@@ -120,7 +142,7 @@ class SalmonTroutDataset(Dataset):
 
         return image, label, img_path
 
-def get_dataloaders(data_dir, batch_size=32):
+def get_dataloaders(data_dir, batch_size=32, split_strategy=(0.8, 0.1, 0.1)):
     # Data Augmentation for Training
     # Enhance augmentation to reduce overfitting and improve generalization
     # Add RandomResizedCrop to force model to look at texture (Data-Centric)
@@ -144,10 +166,26 @@ def get_dataloaders(data_dir, batch_size=32):
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    train_dataset = SalmonTroutDataset(data_dir, transform=train_transforms, mode='train')
-    test_dataset = SalmonTroutDataset(data_dir, transform=test_transforms, mode='test')
+    # Load full dataset first
+    full_dataset = SalmonTroutDataset(data_dir, transform=None, mode='all')
+    total_size = len(full_dataset)
+    
+    train_size = int(split_strategy[0] * total_size)
+    val_size = int(split_strategy[1] * total_size)
+    test_size = total_size - train_size - val_size
+    
+    import torch
+    train_subset, val_subset, test_subset = random_split(
+        full_dataset, [train_size, val_size, test_size],
+        generator=torch.Generator().manual_seed(42)
+    )
+
+    train_dataset = SubsetWithTransform(train_subset, transform=train_transforms)
+    val_dataset = SubsetWithTransform(val_subset, transform=test_transforms)
+    test_dataset = SubsetWithTransform(test_subset, transform=test_transforms)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
 
-    return train_loader, test_loader
+    return train_loader, val_loader, test_loader

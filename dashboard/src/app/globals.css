@@ -1,26 +1,96 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+
+  --animate-spotlight: spotlight 2s ease .75s 1 forwards;
+  
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* Strict Monochrome - Dark Mode Default */
+  --background: #000000;
+  --foreground: #ffffff;
+  
+  --card: #000000;
+  --card-foreground: #ffffff;
+  
+  --popover: #000000;
+  --popover-foreground: #ffffff;
+  
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  
+  --secondary: #171717;
+  --secondary-foreground: #ffffff;
+  
+  --muted: #171717;
+  --muted-foreground: #a3a3a3;
+  
+  --accent: #171717;
+  --accent-foreground: #ffffff;
+  
+  --destructive: #ffffff;
+  --destructive-foreground: #000000;
+  
+  --border: #262626;
+  --input: #262626;
+  --ring: #d4d4d4;
+  
+  --radius: 0rem; /* Sharp edges */
+}
+
+/* Optional: Light mode override if explicitly requested, but for now we stick to strict dark default */
+@media (prefers-color-scheme: light) {
+  /* Kept dark mode variables as default to ensure strict adherence to "Dark Mode default" request even if system is light */
+  /* If user wants light mode, they can toggle, but we force dark initially */
+}
+
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: translate(-72%, -62%) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%,-40%) scale(1);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Utilities for Aceternity UI Grid */
+.bg-grid-white\/\[0\.02\] {
+  background-size: 40px 40px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.04)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
 }

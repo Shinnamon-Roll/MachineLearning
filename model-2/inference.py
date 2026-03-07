@@ -98,5 +98,9 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
+    if not os.path.exists(args.image_path):
+        print(json.dumps({"error": f"Image not found: {args.image_path}"}))
+        exit(1)
+
     result = predict(args.image_path, args.model_path)
     print(json.dumps(result))

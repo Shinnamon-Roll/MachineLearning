@@ -38,7 +38,7 @@ def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0
     print(f"Using device: {device}")
 
     # Load DataLoaders
-    train_loader, val_loader = get_dataloaders(data_dir, batch_size)
+    train_loader, val_loader, test_loader = get_dataloaders(data_dir, batch_size)
     dataloaders = {'train': train_loader, 'val': val_loader}
     dataset_sizes = {'train': len(train_loader.dataset), 'val': len(val_loader.dataset)}
 
