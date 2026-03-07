@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  modelId?: string;
+}
+
+export default function HeroSection({ modelId = "model-2" }: HeroSectionProps) {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "processing" | "result">("idle");
   const [result, setResult] = useState<any>(null);
@@ -23,15 +27,46 @@ export default function HeroSection() {
 
   const processImage = async (file: File) => {
     setStatus("processing");
-    // Simulate AI Processing
-    setTimeout(() => {
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('modelId', modelId);
+
+    try {
+      const response = await fetch('/api/predict', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error("Model Error:", data.error);
+        setStatus("result");
+        setResult({
+          type: "Error",
+          confidence: 0,
+          details: data.details || data.error
+        });
+        return;
+      }
+
       setStatus("result");
       setResult({
-        type: "Salmon",
-        confidence: 98.5,
-        details: "Atlantic Salmon",
+        type: data.class,
+        confidence: data.confidence,
+        details: `Model Confidence: ${parseFloat(data.confidence).toFixed(2)}%`,
       });
-    }, 2000);
+
+    } catch (error) {
+      console.error("API Error:", error);
+      setStatus("result");
+      setResult({
+        type: "Error",
+        confidence: 0,
+        details: "Failed to communicate with server",
+      });
+    }
   };
 
   const reset = () => {

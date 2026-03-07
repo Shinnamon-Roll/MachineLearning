@@ -101,7 +101,7 @@ export default async function Model1Page() {
            <span className="bg-primary text-primary-foreground px-3 py-1 text-sm font-bold rounded-sm">INTERACTIVE</span>
            <h2 className="text-2xl font-bold">Try Model 1</h2>
         </div>
-        <HeroSection />
+        <HeroSection modelId="model-1" />
       </section>
 
       {/* Part 2: Model Details */}

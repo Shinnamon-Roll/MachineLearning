@@ -1,7 +1,52 @@
 import os
 from PIL import Image
+import numpy as np
+import cv2
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+
+class CLAHETransform:
+    """
+    Custom transform to apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    to enhance texture details like fat lines in salmon/trout.
+    """
+    def __init__(self, clip_limit=2.0, tile_grid_size=(8, 8)):
+        self.clip_limit = clip_limit
+        self.tile_grid_size = tile_grid_size
+
+    def __call__(self, img):
+        """
+        Args:
+            img (PIL Image): Image to be transformed.
+
+        Returns:
+            PIL Image: CLAHE applied image.
+        """
+        # Convert PIL image to OpenCV format (numpy array)
+        img_np = np.array(img)
+        
+        # Check if image is RGB
+        if len(img_np.shape) == 3 and img_np.shape[2] == 3:
+            # Convert RGB to LAB color space
+            lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
+            
+            # Split LAB channels
+            l, a, b = cv2.split(lab)
+            
+            # Apply CLAHE to L-channel (Luminance)
+            clahe = cv2.createCLAHE(clipLimit=self.clip_limit, tileGridSize=self.tile_grid_size)
+            cl = clahe.apply(l)
+            
+            # Merge enhanced L-channel with original A and B channels
+            limg = cv2.merge((cl, a, b))
+            
+            # Convert back to RGB
+            final_img = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
+            
+            # Return as PIL Image
+            return Image.fromarray(final_img)
+        
+        return img # Return original if not RGB
 
 class SalmonTroutDataset(Dataset):
     def __init__(self, root_dir, transform=None, mode='train'):
@@ -77,17 +122,24 @@ class SalmonTroutDataset(Dataset):
 
 def get_dataloaders(data_dir, batch_size=32):
     # Data Augmentation for Training
+    # Enhance augmentation to reduce overfitting and improve generalization
+    # Add RandomResizedCrop to force model to look at texture (Data-Centric)
+    # Add CLAHE to enhance texture details (Preprocessing)
     train_transforms = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.RandomResizedCrop(224, scale=(0.6, 1.0)), # Force texture learning
         transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(10),
+        transforms.RandomRotation(15), 
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
+        CLAHETransform(clip_limit=2.0, tile_grid_size=(8, 8)), # Enhance fat lines
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    # Transforms for Testing (No augmentation)
+    # Transforms for Testing (No augmentation except resize/normalize + CLAHE for consistency)
     test_transforms = transforms.Compose([
         transforms.Resize((224, 224)),
+        CLAHETransform(clip_limit=2.0, tile_grid_size=(8, 8)), # Apply CLAHE to test set too
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])

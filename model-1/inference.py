@@ -65,20 +65,39 @@ def predict_pipeline(image_path, model_path):
         class_name = CLASSES[class_idx]
         confidence_score = confidence.item() * 100
 
-    print(f"Prediction: {class_name} ({confidence_score:.2f}%)")
+    # print(f"Prediction: {class_name} ({confidence_score:.2f}%)")
     
     result = {
-        "classification": class_name,
-        "confidence": confidence_score
+        "class": class_name,
+        "confidence": confidence_score,
+        "probabilities": {
+            "Salmon": probs[0][0].item() * 100,
+            "Trout": probs[0][1].item() * 100
+        }
     }
     
     return result
 
 if __name__ == "__main__":
-    # Test
-    MODEL_PATH = "salmon_trout_binary_model.pth"
-    # Replace with an actual image path for testing
-    TEST_IMAGE = "../Image/Salmon!/Salmon Test/some_image.jpg" 
+    import argparse
+    import json
+    import os
+
+    parser = argparse.ArgumentParser(description='Inference for Salmon/Trout Model 1')
+    parser.add_argument('image_path', type=str, help='Path to the input image')
+    # Default model path assumes running from project root or model-1 dir, adjust as needed
+    default_model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "salmon_trout_binary_model.pth")
+    parser.add_argument('--model_path', type=str, default=default_model_path, help='Path to model weights')
     
-    # if os.path.exists(TEST_IMAGE):
-    #     predict_pipeline(TEST_IMAGE, MODEL_PATH)
+    args = parser.parse_args()
+    
+    if not os.path.exists(args.image_path):
+        print(json.dumps({"error": f"Image not found: {args.image_path}"}))
+        exit(1)
+
+    # Suppress print statements from predict_pipeline by redirecting stdout temporarily or modifying function
+    # But since predict_pipeline has print(), we should modify it to NOT print if we want clean JSON output.
+    # For now, let's modify predict_pipeline to remove the print statement.
+    
+    result = predict_pipeline(args.image_path, args.model_path)
+    print(json.dumps(result))
