@@ -1,10 +1,10 @@
 # Salmon vs Trout Classification Project
 
-This project aims to classify images of Salmon and Trout using deep learning models. The goal is to compare three different models, with the first model being based on the "ImprovedDenseNet121" research architecture.
+This project aims to classify images of Salmon and Trout using deep learning models. The core objective is to **compare three different models** to evaluate their performance in binary classification tasks.
 
 ## Project Structure
 
-- **Machine/**: Contains the machine learning code (training, evaluation, data loading).
+- **machine/**: Contains the machine learning code (training, evaluation, data loading).
 - **dashboard/**: Contains the Next.js web application for the user interface.
 - **Image/**: Contains the dataset for training and testing.
 
@@ -19,16 +19,35 @@ The dataset is organized into:
 
 ---
 
-## Model 1: ImprovedDenseNet121 (Research Based)
+## 🔬 Model Comparison Plan
 
-This model is adapted from a research paper and modified for binary classification (Salmon vs. Trout). It uses transfer learning with a pre-trained DenseNet121 architecture, where 40% of the layers are frozen.
+We will develop and compare three models:
+
+1.  **Model 1: ImprovedDenseNet121 (Research Based)**
+    - Status: ✅ Completed
+    - Architecture: Transfer Learning with DenseNet121 (40% layers frozen).
+    - Features: Binary classification (Salmon vs. Trout), Real-time training progress.
+
+2.  **Model 2: (Pending)**
+    - Status: 🚧 To be developed
+    - Goal: Alternative architecture for comparison.
+
+3.  **Model 3: (Pending)**
+    - Status: 🚧 To be developed
+    - Goal: Third architecture for comprehensive benchmarking.
+
+---
+
+## 🧠 Model 1: ImprovedDenseNet121
+
+This model is adapted from a research paper and modified for binary classification.
 
 ### Training
 
-To train Model 1, navigate to the `Machine` directory and run the `train.py` script:
+To train Model 1, navigate to the `machine` directory and run the `train.py` script:
 
 ```bash
-cd Machine
+cd machine
 python3 train.py
 ```
 
@@ -44,38 +63,25 @@ The best model weights will be saved as `best_model.pth`.
 To evaluate the trained model on the test dataset:
 
 ```bash
-cd Machine
+cd machine
 python3 evaluate.py
 ```
 
 This will output:
 - A confusion matrix.
-- Precision, Recall, and F1-score for each class (Salmon and Trout).
+- Precision, Recall, and F1-score for each class.
+- Results will also be saved to the dashboard for visualization.
 
 ---
 
-## Model 2: (Pending)
+## 💻 Dashboard
 
-*Status: To be developed.*
+The dashboard is a modern web application built with Next.js 14 to interact with the model and visualize results.
 
-This section is reserved for the second model, which will be developed for comparison purposes.
-
----
-
-## Model 3: (Pending)
-
-*Status: To be developed.*
-
-This section is reserved for the third model for comparison.
-
----
-
-## Dashboard
-
-The dashboard is a web application built with Next.js to interact with the model.
-
-### Prerequisites
-- Node.js and npm installed.
+### Features
+- **Real-time Inference**: Upload an image to classify it as Salmon or Trout.
+- **Performance Visualization**: View accuracy, loss, and confusion matrix charts.
+- **Dark Mode**: Toggle between light and dark themes for better visibility.
 
 ### Installation & Running
 
@@ -95,8 +101,4 @@ The dashboard is a web application built with Next.js to interact with the model
    ```
 
 4. Open your browser and navigate to:
-   `http://localhost:3001`
-
-### Usage
-- Upload an image of a Salmon or Trout.
-- The dashboard will display the classification result (mock result currently, pending integration with the backend API).
+   `http://localhost:3000` (or the port shown in your terminal)

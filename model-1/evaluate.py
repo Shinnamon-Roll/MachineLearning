@@ -5,7 +5,8 @@ from torchvision import transforms
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+import json
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, precision_recall_fscore_support
 import seaborn as sns
 from model import ImprovedDenseNet121
 from data_loader import get_dataloaders
@@ -16,6 +17,8 @@ def evaluate_model(model_path, data_dir, batch_size=32):
     print(f"Using device: {device}")
 
     # Load DataLoaders (We only need test/val loader here)
+    # Note: get_dataloaders returns (train_loader, val_loader)
+    # We use the val_loader as the test set here
     _, test_loader = get_dataloaders(data_dir, batch_size)
     
     # Initialize Model
@@ -55,7 +58,12 @@ def evaluate_model(model_path, data_dir, batch_size=32):
 
     # Calculate Metrics
     accuracy = accuracy_score(all_labels, all_preds)
+    precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='weighted')
+    
     print(f"\nTest Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1 Score: {f1:.4f}")
 
     # Confusion Matrix
     cm = confusion_matrix(all_labels, all_preds)
@@ -67,14 +75,33 @@ def evaluate_model(model_path, data_dir, batch_size=32):
     print("\nClassification Report:")
     print(classification_report(all_labels, all_preds, target_names=classes))
 
+    # Save metrics to JSON for dashboard
+    metrics_data = {
+        "model_name": "ImprovedDenseNet121",
+        "accuracy": float(accuracy),
+        "precision": float(precision),
+        "recall": float(recall),
+        "f1_score": float(f1),
+        "confusion_matrix": cm.tolist(),
+        "classes": classes,
+        "test_samples": len(all_labels)
+    }
+    
+    json_path = "../dashboard/public/data/metrics.json"
+    os.makedirs(os.path.dirname(json_path), exist_ok=True)
+    with open(json_path, "w") as f:
+        json.dump(metrics_data, f, indent=4)
+    print(f"Metrics saved to {json_path}")
+
     # Plot Confusion Matrix
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.title('Confusion Matrix')
+    plt.savefig('../dashboard/public/data/confusion_matrix.png') # Save to public/data too
     plt.savefig('confusion_matrix.png')
-    print("Confusion matrix saved to 'confusion_matrix.png'")
+    print("Confusion matrix saved to 'confusion_matrix.png' and dashboard folder")
 
 if __name__ == "__main__":
     DATA_DIR = "/Users/shinnamon/Documents/Project/MachineLearning/Image/"

@@ -59,6 +59,12 @@ def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
+    
+    # Store training history
+    history = {
+        'train_loss': [], 'train_acc': [],
+        'val_loss': [], 'val_acc': []
+    }
 
     start_time = time.time()
 
@@ -105,6 +111,14 @@ def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
             print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+            
+            # Save history
+            if phase == 'train':
+                history['train_loss'].append(epoch_loss)
+                history['train_acc'].append(epoch_acc.item())
+            else:
+                history['val_loss'].append(epoch_loss)
+                history['val_acc'].append(epoch_acc.item())
 
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
@@ -113,6 +127,14 @@ def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0
     time_elapsed = time.time() - start_time
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
     print(f'Best val Acc: {best_acc:4f}')
+    
+    # Save history to JSON
+    import json
+    history_path = "../dashboard/public/data/training_history.json"
+    os.makedirs(os.path.dirname(history_path), exist_ok=True)
+    with open(history_path, "w") as f:
+        json.dump(history, f, indent=4)
+    print(f"Training history saved to {history_path}")
 
     # Load best model weights
     model.load_state_dict(best_model_wts)

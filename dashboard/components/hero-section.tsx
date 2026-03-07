@@ -47,18 +47,18 @@ export default function HeroSection() {
   return (
     <div className="relative w-full min-h-[600px] flex flex-col items-center justify-center overflow-hidden rounded-md bg-neutral-950 border border-neutral-800">
       {/* Background Effect (Simplified Aceternity Grid) */}
-      <div className="absolute inset-0 w-full h-full bg-neutral-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))] pointer-events-none" />
+      <div className="absolute inset-0 w-full h-full bg-neutral-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,120,120,0.3),rgba(255,255,255,0))] pointer-events-none" />
       <div className="absolute inset-0 h-full w-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
       <div className="z-10 flex flex-col items-center text-center space-y-6 max-w-4xl p-6">
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400"
+          className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-neutral-400"
         >
           Salmon & Trout Analysis
         </motion.h1>
-        <p className="text-neutral-300 text-lg max-w-lg mx-auto">
+        <p className="text-neutral-400 text-lg max-w-lg mx-auto">
           Deep Learning-based classification and freshness grading system using Improved DenseNet121.
         </p>
 
@@ -108,15 +108,15 @@ export default function HeroSection() {
                   )}
                   {/* Scanning Line Animation */}
                   <motion.div
-                    className="absolute top-0 left-0 w-full h-1 bg-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.8)]"
+                    className="absolute top-0 left-0 w-full h-1 bg-white shadow-[0_0_20px_rgba(255,255,255,0.8)]"
                     animate={{ top: ["0%", "100%", "0%"] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Scan className="w-12 h-12 text-cyan-500 animate-pulse" />
+                    <Scan className="w-12 h-12 text-white animate-pulse" />
                   </div>
                 </div>
-                <p className="text-cyan-400 font-mono animate-pulse">Analyzing structure & freshness...</p>
+                <p className="text-neutral-300 font-mono animate-pulse">Analyzing structure & freshness...</p>
               </motion.div>
             )}
 
@@ -136,18 +136,14 @@ export default function HeroSection() {
                   <div className="bg-neutral-800/50 p-4 rounded-lg border border-neutral-700">
                     <p className="text-sm text-neutral-400">Type</p>
                     <p className="text-lg font-bold text-white flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <CheckCircle className="w-4 h-4 text-white" />
                       {result.type}
                     </p>
                     <p className="text-xs text-neutral-500 mt-1">{result.details}</p>
                   </div>
                   <div className="bg-neutral-800/50 p-4 rounded-lg border border-neutral-700">
                     <p className="text-sm text-neutral-400">Freshness</p>
-                    <p className={cn(
-                      "text-lg font-bold flex items-center gap-2",
-                      result.freshness === "Bright Orange" ? "text-orange-400" : 
-                      result.freshness === "Red Orange" ? "text-red-500" : "text-pink-400"
-                    )}>
+                    <p className="text-lg font-bold text-white flex items-center gap-2">
                       {result.freshness}
                     </p>
                     <p className="text-xs text-neutral-500 mt-1">Grade A</p>
@@ -164,7 +160,7 @@ export default function HeroSection() {
                       initial={{ width: 0 }}
                       animate={{ width: `${result.confidence}%` }}
                       transition={{ duration: 0.8, delay: 0.2 }}
-                      className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                      className="h-full bg-white"
                     />
                   </div>
                 </div>

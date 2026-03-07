@@ -1,163 +1,240 @@
-import HeroSection from "@/components/hero-section";
+import fs from 'fs';
+import path from 'path';
 import PerformanceChart from "@/components/performance-chart";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "lucide-react"; // Wait, Badge is not in lucide-react. I'll use a simple span or create a badge component.
-// Actually I don't need Badge component, I can style a span.
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from 'next/link';
+import { ArrowRight, BarChart3, Microscope } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
-export default function Home() {
-  // Mock Data for Charts
-  const datasetDistribution = {
-    series: [25, 20, 25, 15, 10, 5],
-    options: {
-      labels: ["Wild Salmon Steak", "Wild Salmon Fillet", "Farmed Salmon Steak", "Farmed Salmon Fillet", "Trout Meat", "Other Meat"],
-      colors: ["#ef4444", "#f87171", "#fb923c", "#fdba74", "#38bdf8", "#94a3b8"],
-      legend: { position: 'bottom' as const },
+// Function to read data from JSON files
+async function getData() {
+  const metricsPath = path.join(process.cwd(), 'public', 'data', 'metrics.json');
+  
+  let metrics1 = null;
+
+  try {
+    if (fs.existsSync(metricsPath)) {
+      metrics1 = JSON.parse(fs.readFileSync(metricsPath, 'utf8'));
     }
+  } catch (error) {
+    console.error("Error reading data", error);
+  }
+
+  return { metrics1 };
+}
+
+export default async function Dashboard() {
+  const { metrics1 } = await getData();
+
+  // Comparison Data
+  const models = [
+    { 
+      id: 'model-1', 
+      name: 'ImprovedDenseNet121', 
+      status: 'Completed', 
+      accuracy: metrics1 ? metrics1.accuracy : 0,
+      f1: metrics1 ? metrics1.f1_score : 0,
+      precision: metrics1 ? metrics1.precision : 0,
+      recall: metrics1 ? metrics1.recall : 0
+    },
+    { 
+      id: 'model-2', 
+      name: 'Model 2 (Pending)', 
+      status: 'In Development', 
+      accuracy: 0,
+      f1: 0,
+      precision: 0,
+      recall: 0
+    },
+    { 
+      id: 'model-3', 
+      name: 'Model 3 (Pending)', 
+      status: 'In Development', 
+      accuracy: 0,
+      f1: 0,
+      precision: 0,
+      recall: 0
+    }
+  ];
+
+  // Chart Data: Accuracy Comparison
+  const accuracySeries = [{
+    name: 'Accuracy',
+    data: models.map(m => parseFloat((m.accuracy * 100).toFixed(2)))
+  }];
+
+  const accuracyOptions: any = {
+    chart: { type: 'bar', toolbar: { show: false } },
+    plotOptions: {
+      bar: { borderRadius: 4, columnWidth: '50%', distributed: true }
+    },
+    colors: ['#3b82f6', '#94a3b8', '#94a3b8'], // Blue for completed, Gray for pending
+    xaxis: {
+      categories: models.map(m => m.name),
+      labels: { style: { fontSize: '12px' } }
+    },
+    yaxis: {
+      max: 100,
+      title: { text: 'Accuracy (%)' }
+    },
+    legend: { show: false }
   };
 
-  const learningCurve = {
-    series: [
-      { name: "Training Accuracy", data: [10, 40, 60, 75, 80, 85, 88, 90, 92, 94] },
-      { name: "Validation Accuracy", data: [5, 30, 50, 65, 72, 78, 80, 82, 83, 84.58] }
-    ],
-    options: {
-      xaxis: { categories: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], title: { text: "Epochs" } },
-      colors: ["#38bdf8", "#f472b6"],
-      stroke: { curve: 'smooth' as const, width: 3 },
-    }
-  };
+  // Chart Data: F1-Score Comparison
+  const f1Series = [{
+    name: 'F1-Score',
+    data: models.map(m => parseFloat((m.f1 * 100).toFixed(2)))
+  }];
 
-  const modelMetrics = {
-    series: [
-      { name: "Improved DenseNet121", data: [84.58, 82.1, 79.5, 77.8] },
-      { name: "Baseline CNN", data: [68.4, 65.2, 60.1, 62.5] }
-    ],
-    options: {
-      xaxis: { categories: ["Accuracy", "Precision", "Recall", "F1-Score"] },
-      colors: ["#34d399", "#94a3b8"],
-      fill: { opacity: 0.2 },
-      stroke: { width: 2 },
-      markers: { size: 4 },
-    }
+  const f1Options: any = {
+    chart: { type: 'bar', toolbar: { show: false } },
+    plotOptions: {
+      bar: { borderRadius: 4, columnWidth: '50%', distributed: true }
+    },
+    colors: ['#10b981', '#94a3b8', '#94a3b8'], // Green for completed
+    xaxis: {
+      categories: models.map(m => m.name),
+      labels: { style: { fontSize: '12px' } }
+    },
+    yaxis: {
+      max: 100,
+      title: { text: 'F1-Score (%)' }
+    },
+    legend: { show: false }
   };
 
   return (
-    <main className="min-h-screen bg-black text-white p-4 md:p-8 font-sans selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 font-sans transition-colors duration-300">
       
-      {/* 1. Hero & Interactive Testing Section */}
-      <section className="mb-8">
-        <HeroSection />
-      </section>
+      {/* Header */}
+      <header className="mb-10 text-center relative">
+        <h1 className="text-4xl font-bold mb-2 uppercase tracking-widest border-b-4 border-foreground inline-block pb-2">
+          Project Dashboard
+        </h1>
+        <p className="text-muted-foreground mt-2">Salmon & Trout Classification Model Comparison</p>
+      </header>
 
-      {/* Bento Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-        
-        {/* 2. Data Management & Preprocessing (Spans 2 columns) */}
-        <Card className="col-span-1 md:col-span-2 bg-neutral-900/50 border-neutral-800">
-          <CardHeader>
-            <CardTitle className="text-xl text-cyan-400">Dataset Distribution</CardTitle>
-            <CardDescription>6 Classes of Salmon & Trout Data</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col md:flex-row items-center gap-4">
-            <div className="w-full md:w-1/2 h-64">
-              <PerformanceChart type="donut" series={datasetDistribution.series} options={datasetDistribution.options} height={250} />
-            </div>
-            <div className="w-full md:w-1/2 space-y-4">
-              <div className="p-4 rounded-lg bg-neutral-800/50 border border-neutral-700">
-                <h4 className="font-semibold text-white mb-2">Data Management</h4>
-                <ul className="text-sm text-neutral-400 space-y-2 list-disc list-inside">
-                  <li>Collected from multiple online sources & supermarkets.</li>
-                  <li>Preprocessing: Resize (224x224), Normalization, Augmentation.</li>
-                  <li>Split: <span className="text-cyan-400">Train (70%)</span>, <span className="text-blue-400">Val (15%)</span>, <span className="text-purple-400">Test (15%)</span>.</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <Card className="bg-card border-primary/20 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Best Performing Model</CardTitle>
+                <Microscope className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{metrics1 ? 'ImprovedDenseNet121' : 'N/A'}</div>
+                <p className="text-xs text-muted-foreground">
+                    Accuracy: {metrics1 ? (metrics1.accuracy * 100).toFixed(2) + '%' : 'N/A'}
+                </p>
+            </CardContent>
         </Card>
+        <Card className="bg-card border-primary/20 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Models Developed</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">1 / 3</div>
+                <p className="text-xs text-muted-foreground">
+                    Target: 3 Models Comparison
+                </p>
+            </CardContent>
+        </Card>
+        <Card className="bg-card border-primary/20 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Current Status</CardTitle>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">Phase 1 Complete</div>
+                <p className="text-xs text-muted-foreground">
+                    Developing Model 2 & 3
+                </p>
+            </CardContent>
+        </Card>
+      </div>
 
-        {/* 3. Model Comparison (Spans 2 columns) */}
-        <Card className="col-span-1 md:col-span-2 lg:col-span-2 bg-neutral-900/50 border-neutral-800">
-          <CardHeader>
-            <CardTitle className="text-xl text-purple-400">Model Comparison</CardTitle>
-            <CardDescription>Two-Stage Improved DenseNet121 vs Baseline</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-neutral-400">
-                <thead className="text-xs text-neutral-200 uppercase bg-neutral-800">
+      {/* Comparison Section */}
+      <section className="mb-16">
+        <div className="flex items-center gap-2 mb-6">
+           <span className="bg-primary text-primary-foreground px-3 py-1 text-sm font-bold rounded-sm">COMPARISON</span>
+           <h2 className="text-2xl font-bold">Model Performance Comparison</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Accuracy Chart */}
+            <Card className="bg-card shadow-sm">
+                <CardHeader>
+                    <CardTitle>Accuracy Comparison</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <PerformanceChart type="bar" series={accuracySeries} options={accuracyOptions} height={300} />
+                </CardContent>
+            </Card>
+
+            {/* F1 Chart */}
+            <Card className="bg-card shadow-sm">
+                <CardHeader>
+                    <CardTitle>F1-Score Comparison</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <PerformanceChart type="bar" series={f1Series} options={f1Options} height={300} />
+                </CardContent>
+            </Card>
+        </div>
+
+        {/* Detailed Table */}
+        <Card className="bg-card border-2 border-primary shadow-none rounded-none overflow-hidden">
+            <CardHeader className="bg-muted border-b-2 border-primary">
+              <CardTitle className="text-xl font-bold">Detailed Metrics Table</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-primary text-primary-foreground uppercase">
                   <tr>
-                    <th className="px-4 py-3 rounded-tl-lg">Model</th>
-                    <th className="px-4 py-3">Architecture</th>
-                    <th className="px-4 py-3">Accuracy</th>
-                    <th className="px-4 py-3 rounded-tr-lg">Key Advantage</th>
+                    <th className="px-6 py-4">Model Name</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Accuracy</th>
+                    <th className="px-6 py-4">Precision</th>
+                    <th className="px-6 py-4">Recall</th>
+                    <th className="px-6 py-4">F1 Score</th>
+                    <th className="px-6 py-4">Action</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr className="bg-neutral-800/30 border-b border-neutral-700">
-                    <td className="px-4 py-3 font-medium text-white">Baseline CNN</td>
-                    <td className="px-4 py-3">Standard CNN (3 Layers)</td>
-                    <td className="px-4 py-3">68.40%</td>
-                    <td className="px-4 py-3">Simple, Fast</td>
-                  </tr>
-                  <tr className="bg-cyan-900/20 border-b border-cyan-800/50">
-                    <td className="px-4 py-3 font-medium text-cyan-400">Improved DenseNet121</td>
-                    <td className="px-4 py-3">DenseNet121 + GAP + Dropout</td>
-                    <td className="px-4 py-3 font-bold text-white">84.58%</td>
-                    <td className="px-4 py-3 text-cyan-200">High Feature Reuse, Robust to Blur</td>
-                  </tr>
+                <tbody className="divide-y divide-border">
+                  {models.map((model, index) => (
+                    <tr key={index} className={model.status === 'Completed' ? 'bg-background' : 'bg-muted/30'}>
+                        <td className="px-6 py-4 font-bold">{model.name}</td>
+                        <td className="px-6 py-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                model.status === 'Completed' 
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100' 
+                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-100'
+                            }`}>
+                                {model.status}
+                            </span>
+                        </td>
+                        <td className="px-6 py-4 font-mono">{model.accuracy > 0 ? (model.accuracy * 100).toFixed(2) + '%' : '-'}</td>
+                        <td className="px-6 py-4 font-mono">{model.precision > 0 ? (model.precision * 100).toFixed(2) + '%' : '-'}</td>
+                        <td className="px-6 py-4 font-mono">{model.recall > 0 ? (model.recall * 100).toFixed(2) + '%' : '-'}</td>
+                        <td className="px-6 py-4 font-mono">{model.f1 > 0 ? (model.f1 * 100).toFixed(2) + '%' : '-'}</td>
+                        <td className="px-6 py-4">
+                            {model.status === 'Completed' || model.id === 'model-2' ? (
+                                <Link href={`/${model.id}`}>
+                                    <Button variant="outline" size="sm">View Details</Button>
+                                </Link>
+                            ) : (
+                                <span className="text-muted-foreground text-xs">Coming Soon</span>
+                            )}
+                        </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-            </div>
-            <div className="mt-4 p-3 rounded-md bg-cyan-950/30 border border-cyan-900/50 text-xs text-cyan-200">
-              <strong>Highlight:</strong> The Two-Stage pipeline (Classification &rarr; Freshness) significantly reduces false positives in freshness grading compared to single-stage models.
-            </div>
-          </CardContent>
+            </CardContent>
         </Card>
+      </section>
 
-        {/* 4. Performance Evaluation - Learning Curve (Spans 2 columns) */}
-        <Card className="col-span-1 md:col-span-2 lg:col-span-2 bg-neutral-900/50 border-neutral-800">
-          <CardHeader>
-            <CardTitle className="text-xl text-green-400">Learning Curve</CardTitle>
-            <CardDescription>Training vs Validation Accuracy over Epochs</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-72">
-              <PerformanceChart type="line" series={learningCurve.series} options={learningCurve.options} height={280} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 4. Performance Evaluation - Metrics Radar (Spans 1 column) */}
-        <Card className="col-span-1 md:col-span-1 lg:col-span-1 bg-neutral-900/50 border-neutral-800">
-          <CardHeader>
-            <CardTitle className="text-xl text-yellow-400">Metrics Radar</CardTitle>
-            <CardDescription>Performance Overview</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <PerformanceChart type="radar" series={modelMetrics.series} options={modelMetrics.options} height={250} />
-            </div>
-          </CardContent>
-        </Card>
-
-         {/* Conclusion Box (Spans 1 column) */}
-         <Card className="col-span-1 md:col-span-1 lg:col-span-1 bg-gradient-to-br from-neutral-900 to-neutral-800 border-neutral-700 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl text-white">Conclusion</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose prose-invert prose-sm">
-              <p className="text-neutral-300 leading-relaxed">
-                The <span className="text-cyan-400 font-semibold">Improved DenseNet121</span> demonstrates superior performance with an accuracy of <span className="text-green-400 font-bold">84.58%</span>.
-              </p>
-              <p className="text-neutral-300 leading-relaxed mt-2">
-                The two-stage approach effectively handles the complexity of classifying fish types before assessing freshness, achieving an F1-Score of over <span className="text-purple-400 font-bold">77%</span>.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-      </div>
-    </main>
+    </div>
   );
 }
