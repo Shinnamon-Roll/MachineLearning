@@ -9,22 +9,27 @@ import { Button } from "@/components/ui/button";
 // Function to read data from JSON files
 async function getData() {
   const metricsPath = path.join(process.cwd(), 'public', 'data', 'metrics.json');
+  const metrics2Path = path.join(process.cwd(), 'public', 'data', 'metrics_model2.json');
   
   let metrics1 = null;
+  let metrics2 = null;
 
   try {
     if (fs.existsSync(metricsPath)) {
       metrics1 = JSON.parse(fs.readFileSync(metricsPath, 'utf8'));
     }
+    if (fs.existsSync(metrics2Path)) {
+      metrics2 = JSON.parse(fs.readFileSync(metrics2Path, 'utf8'));
+    }
   } catch (error) {
     console.error("Error reading data", error);
   }
 
-  return { metrics1 };
+  return { metrics1, metrics2 };
 }
 
 export default async function Dashboard() {
-  const { metrics1 } = await getData();
+  const { metrics1, metrics2 } = await getData();
 
   // Comparison Data
   const models = [
@@ -39,12 +44,12 @@ export default async function Dashboard() {
     },
     { 
       id: 'model-2', 
-      name: 'Model 2 (Pending)', 
-      status: 'In Development', 
-      accuracy: 0,
-      f1: 0,
-      precision: 0,
-      recall: 0
+      name: metrics2 ? 'CustomMobileNetV2' : 'Model 2 (Pending)', 
+      status: metrics2 ? 'Completed' : 'In Development', 
+      accuracy: metrics2 ? metrics2.accuracy : 0,
+      f1: metrics2 ? metrics2.f1_score : 0,
+      precision: metrics2 ? metrics2.precision : 0,
+      recall: metrics2 ? metrics2.recall : 0
     },
     { 
       id: 'model-3', 
@@ -68,7 +73,11 @@ export default async function Dashboard() {
     plotOptions: {
       bar: { borderRadius: 4, columnWidth: '50%', distributed: true }
     },
-    colors: ['#3b82f6', '#94a3b8', '#94a3b8'], // Blue for completed, Gray for pending
+    colors: [
+      models[0].status === 'Completed' ? '#3b82f6' : '#94a3b8',
+      models[1].status === 'Completed' ? '#3b82f6' : '#94a3b8',
+      models[2].status === 'Completed' ? '#3b82f6' : '#94a3b8'
+    ],
     xaxis: {
       categories: models.map(m => m.name),
       labels: { style: { fontSize: '12px' } }
@@ -91,7 +100,11 @@ export default async function Dashboard() {
     plotOptions: {
       bar: { borderRadius: 4, columnWidth: '50%', distributed: true }
     },
-    colors: ['#10b981', '#94a3b8', '#94a3b8'], // Green for completed
+    colors: [
+      models[0].status === 'Completed' ? '#10b981' : '#94a3b8',
+      models[1].status === 'Completed' ? '#10b981' : '#94a3b8',
+      models[2].status === 'Completed' ? '#10b981' : '#94a3b8'
+    ],
     xaxis: {
       categories: models.map(m => m.name),
       labels: { style: { fontSize: '12px' } }
@@ -102,6 +115,10 @@ export default async function Dashboard() {
     },
     legend: { show: false }
   };
+
+  // Calculate statistics
+  const completedModels = models.filter(m => m.status === 'Completed').length;
+  const bestModel = models.reduce((prev, current) => (prev.accuracy > current.accuracy) ? prev : current);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8 font-sans transition-colors duration-300">
@@ -122,9 +139,9 @@ export default async function Dashboard() {
                 <Microscope className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{metrics1 ? 'ImprovedDenseNet121' : 'N/A'}</div>
+                <div className="text-2xl font-bold">{bestModel.accuracy > 0 ? bestModel.name : 'N/A'}</div>
                 <p className="text-xs text-muted-foreground">
-                    Accuracy: {metrics1 ? (metrics1.accuracy * 100).toFixed(2) + '%' : 'N/A'}
+                    Accuracy: {bestModel.accuracy > 0 ? (bestModel.accuracy * 100).toFixed(2) + '%' : 'N/A'}
                 </p>
             </CardContent>
         </Card>
@@ -134,7 +151,7 @@ export default async function Dashboard() {
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">1 / 3</div>
+                <div className="text-2xl font-bold">{completedModels} / 3</div>
                 <p className="text-xs text-muted-foreground">
                     Target: 3 Models Comparison
                 </p>
@@ -146,9 +163,9 @@ export default async function Dashboard() {
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">Phase 1 Complete</div>
+                <div className="text-2xl font-bold">Phase {completedModels} Complete</div>
                 <p className="text-xs text-muted-foreground">
-                    Developing Model 2 & 3
+                    Developing Model {completedModels + 1}
                 </p>
             </CardContent>
         </Card>

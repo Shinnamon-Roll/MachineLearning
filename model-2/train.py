@@ -8,50 +8,36 @@ import copy
 import time
 import ssl
 import urllib.request
+import json
 
 # Bypass SSL verification for downloading pretrained weights
 ssl._create_default_https_context = ssl._create_unverified_context
 
-from model import ImprovedDenseNet121
+from model_mobilenet import CustomMobileNetV2
 from data_loader import get_dataloaders
 
-def freeze_layers(model, freeze_percent=0.4):
-    """
-    Freezes the first `freeze_percent` of the model's parameters.
-    """
-    parameters = list(model.parameters())
-    num_params = len(parameters)
-    num_frozen = int(freeze_percent * num_params)
-    
-    print(f"Total parameters: {num_params}")
-    print(f"Freezing {num_frozen} parameters ({freeze_percent*100}%)")
-    
-    for i, param in enumerate(parameters):
-        if i < num_frozen:
-            param.requires_grad = False
-        else:
-            param.requires_grad = True
-
 def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0001):
-    # Check if GPU is available
+    # Check if GPU/MPS is available
     device = torch.device("mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"))
     print(f"Using device: {device}")
 
     # Load DataLoaders
+    # Note: data_loader.py handles the actual image loading and augmentation
     train_loader, val_loader = get_dataloaders(data_dir, batch_size)
     dataloaders = {'train': train_loader, 'val': val_loader}
     dataset_sizes = {'train': len(train_loader.dataset), 'val': len(val_loader.dataset)}
 
     # Initialize Model for 2 Classes (Salmon, Trout)
-    model = ImprovedDenseNet121(num_classes=2, pretrained=True)
+    model = CustomMobileNetV2(num_classes=2, pretrained=True)
     
-    # Freeze 40% of layers
-    freeze_layers(model, freeze_percent=0.4)
+    # Freeze 40% of layers using the class method
+    model.freeze_percentage(freeze_percent=0.4)
     
     model = model.to(device)
 
     # Loss and Optimizer
     criterion = nn.CrossEntropyLoss()
+    # Only optimize parameters that require gradients
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=learning_rate)
     
     # Learning Rate Scheduler
@@ -85,9 +71,9 @@ def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
-                # Show current image being processed
+                # Show current image being processed (optional, for progress)
                 if phase == 'train':
-                    print(f"Training on: {os.path.basename(paths[0])} ...    ", end='\r')
+                     print(f"Training on: {os.path.basename(paths[0])} ...    ", end='\r')
 
                 optimizer.zero_grad()
 
@@ -102,9 +88,8 @@ def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0
 
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
-            
+
             if phase == 'train':
-                print(f"Epoch {epoch} {phase} complete.                                ")
                 scheduler.step()
 
             epoch_loss = running_loss / dataset_sizes[phase]
@@ -113,7 +98,6 @@ def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0
 
             print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
             
-            # Save history
             if phase == 'train':
                 history['train_loss'].append(epoch_loss)
                 history['train_acc'].append(epoch_acc.item())
@@ -125,31 +109,35 @@ def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
 
+        print()
+
     time_elapsed = time.time() - start_time
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
     print(f'Best val Acc: {best_acc:4f}')
+
+    # Load best model weights
+    model.load_state_dict(best_model_wts)
     
-    # Save history to JSON
-    import json
-    history_path = "../dashboard/public/data/training_history.json"
+    # Save the model
+    save_path = "mobilenet_v2_best.pth"
+    torch.save(model.state_dict(), save_path)
+    print(f"Model saved to {save_path}")
+
+    # Save history to JSON for Dashboard
+    # We save to a different file for Model 2
+    history_path = "../dashboard/public/data/training_history_model2.json"
     os.makedirs(os.path.dirname(history_path), exist_ok=True)
     with open(history_path, "w") as f:
         json.dump(history, f, indent=4)
     print(f"Training history saved to {history_path}")
 
-    # Load best model weights
-    model.load_state_dict(best_model_wts)
-    print("\nTraining Success!")
-    return model
-
 if __name__ == "__main__":
-    # Adjust path as needed
+    # Path to Image folder (same as Model 1)
+    # Adjust this path if necessary based on where you run the script
     DATA_DIR = "/Users/shinnamon/Documents/Project/MachineLearning/Image/"
     
-    # Train binary classification model
-    # Set default epochs to 15 for better results
-    model = train_binary_model(data_dir=DATA_DIR, num_epochs=15)
-    
-    # Save the model
-    torch.save(model.state_dict(), 'salmon_trout_binary_model.pth')
-    print("Model saved to salmon_trout_binary_model.pth")
+    if os.path.exists(DATA_DIR):
+        train_binary_model(DATA_DIR)
+    else:
+        print(f"Error: Data directory not found at {DATA_DIR}")
+        print("Please check the path or move your Image folder.")

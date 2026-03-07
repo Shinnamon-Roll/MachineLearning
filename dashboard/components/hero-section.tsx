@@ -28,11 +28,10 @@ export default function HeroSection() {
       setStatus("result");
       setResult({
         type: "Salmon",
-        freshness: "Bright Orange",
         confidence: 98.5,
-        details: "Wild Salmon Steak",
+        details: "Atlantic Salmon",
       });
-    }, 3000);
+    }, 2000);
   };
 
   const reset = () => {
@@ -116,7 +115,7 @@ export default function HeroSection() {
                     <Scan className="w-12 h-12 text-white animate-pulse" />
                   </div>
                 </div>
-                <p className="text-neutral-300 font-mono animate-pulse">Analyzing structure & freshness...</p>
+                <p className="text-neutral-300 font-mono animate-pulse">Analyzing image features...</p>
               </motion.div>
             )}
 
@@ -132,21 +131,14 @@ export default function HeroSection() {
                   <Button variant="ghost" size="sm" onClick={reset}>Analyze New</Button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-neutral-800/50 p-4 rounded-lg border border-neutral-700">
-                    <p className="text-sm text-neutral-400">Type</p>
-                    <p className="text-lg font-bold text-white flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-white" />
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-neutral-800/50 p-6 rounded-lg border border-neutral-700 text-center">
+                    <p className="text-sm text-neutral-400 mb-2">Predicted Class</p>
+                    <p className="text-3xl font-bold text-white flex items-center justify-center gap-2">
+                      <CheckCircle className="w-6 h-6 text-green-500" />
                       {result.type}
                     </p>
-                    <p className="text-xs text-neutral-500 mt-1">{result.details}</p>
-                  </div>
-                  <div className="bg-neutral-800/50 p-4 rounded-lg border border-neutral-700">
-                    <p className="text-sm text-neutral-400">Freshness</p>
-                    <p className="text-lg font-bold text-white flex items-center gap-2">
-                      {result.freshness}
-                    </p>
-                    <p className="text-xs text-neutral-500 mt-1">Grade A</p>
+                    <p className="text-sm text-neutral-500 mt-2">{result.details}</p>
                   </div>
                 </div>
 

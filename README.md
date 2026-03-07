@@ -4,7 +4,8 @@ This project aims to classify images of Salmon and Trout using deep learning mod
 
 ## Project Structure
 
-- **machine/**: Contains the machine learning code (training, evaluation, data loading).
+- **model-1/**: Contains the ImprovedDenseNet121 code (Research Based).
+- **model-2/**: Contains the CustomMobileNetV2 code (Transfer Learning).
 - **dashboard/**: Contains the Next.js web application for the user interface.
 - **Image/**: Contains the dataset for training and testing.
 
@@ -28,9 +29,10 @@ We will develop and compare three models:
     - Architecture: Transfer Learning with DenseNet121 (40% layers frozen).
     - Features: Binary classification (Salmon vs. Trout), Real-time training progress.
 
-2.  **Model 2: (Pending)**
-    - Status: 🚧 To be developed
-    - Goal: Alternative architecture for comparison.
+2.  **Model 2: CustomMobileNetV2**
+    - Status: ✅ Implemented (Ready to Train)
+    - Architecture: Transfer Learning with MobileNetV2 (40% layers frozen).
+    - Features: Lightweight architecture, optimized for mobile/edge devices.
 
 3.  **Model 3: (Pending)**
     - Status: 🚧 To be developed
@@ -42,35 +44,39 @@ We will develop and compare three models:
 
 This model is adapted from a research paper and modified for binary classification.
 
-### Training
+### Training & Evaluation
 
-To train Model 1, navigate to the `machine` directory and run the `train.py` script:
-
+To train Model 1:
 ```bash
-cd machine
+cd model-1
 python3 train.py
 ```
 
-During training, the script will display:
-- Real-time progress with the name of the image being processed.
-- Loss and Accuracy for both training and validation phases.
-- A success message upon completion.
-
-The best model weights will be saved as `best_model.pth`.
-
-### Testing / Evaluation
-
-To evaluate the trained model on the test dataset:
-
+To evaluate Model 1:
 ```bash
-cd machine
+cd model-1
 python3 evaluate.py
 ```
 
-This will output:
-- A confusion matrix.
-- Precision, Recall, and F1-score for each class.
-- Results will also be saved to the dashboard for visualization.
+---
+
+## 📱 Model 2: CustomMobileNetV2
+
+This model uses MobileNetV2, a lightweight architecture designed for mobile and embedded vision applications.
+
+### Training & Evaluation
+
+To train Model 2:
+```bash
+cd model-2
+python3 train.py
+```
+
+To evaluate Model 2:
+```bash
+cd model-2
+python3 evaluate.py
+```
 
 ---
 
@@ -82,6 +88,7 @@ The dashboard is a modern web application built with Next.js 14 to interact with
 - **Real-time Inference**: Upload an image to classify it as Salmon or Trout.
 - **Performance Visualization**: View accuracy, loss, and confusion matrix charts.
 - **Dark Mode**: Toggle between light and dark themes for better visibility.
+- **Model Comparison**: Compare metrics between Model 1 and Model 2 side-by-side.
 
 ### Installation & Running
 
@@ -101,4 +108,4 @@ The dashboard is a modern web application built with Next.js 14 to interact with
    ```
 
 4. Open your browser and navigate to:
-   `http://localhost:3000` (or the port shown in your terminal)
+   `http://localhost:3000`

@@ -8,7 +8,8 @@ import numpy as np
 import json
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, precision_recall_fscore_support
 import seaborn as sns
-from model import ImprovedDenseNet121
+
+from model_mobilenet import CustomMobileNetV2
 from data_loader import get_dataloaders
 
 def evaluate_model(model_path, data_dir, batch_size=32):
@@ -22,12 +23,16 @@ def evaluate_model(model_path, data_dir, batch_size=32):
     _, test_loader = get_dataloaders(data_dir, batch_size)
     
     # Initialize Model
-    model = ImprovedDenseNet121(num_classes=2, pretrained=False)
+    model = CustomMobileNetV2(num_classes=2, pretrained=False)
     
     # Load weights
     try:
-        model.load_state_dict(torch.load(model_path, map_location=device))
-        print(f"Loaded model from {model_path}")
+        if os.path.exists(model_path):
+            model.load_state_dict(torch.load(model_path, map_location=device))
+            print(f"Loaded model from {model_path}")
+        else:
+            print(f"Model file not found: {model_path}")
+            return
     except Exception as e:
         print(f"Error loading model: {e}")
         return
@@ -77,7 +82,7 @@ def evaluate_model(model_path, data_dir, batch_size=32):
 
     # Save metrics to JSON for dashboard
     metrics_data = {
-        "model_name": "ImprovedDenseNet121",
+        "model_name": "CustomMobileNetV2",
         "accuracy": float(accuracy),
         "precision": float(precision),
         "recall": float(recall),
@@ -87,7 +92,8 @@ def evaluate_model(model_path, data_dir, batch_size=32):
         "test_samples": len(all_labels)
     }
     
-    json_path = "../dashboard/public/data/metrics.json"
+    # Save to model-2 specific file
+    json_path = "../dashboard/public/data/metrics_model2.json"
     os.makedirs(os.path.dirname(json_path), exist_ok=True)
     with open(json_path, "w") as f:
         json.dump(metrics_data, f, indent=4)
@@ -98,13 +104,16 @@ def evaluate_model(model_path, data_dir, batch_size=32):
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
     plt.xlabel('Predicted')
     plt.ylabel('True')
-    plt.title('Confusion Matrix')
-    plt.savefig('../dashboard/public/data/confusion_matrix.png') # Save to public/data too
-    plt.savefig('confusion_matrix.png')
-    print("Confusion matrix saved to 'confusion_matrix.png' and dashboard folder")
+    plt.title('Confusion Matrix (MobileNetV2)')
+    
+    # Save confusion matrix image
+    cm_path = '../dashboard/public/data/confusion_matrix_model2.png'
+    plt.savefig(cm_path) # Save to public/data too
+    plt.savefig('confusion_matrix_model2.png')
+    print(f"Confusion matrix saved to '{cm_path}'")
 
 if __name__ == "__main__":
     DATA_DIR = "/Users/shinnamon/Documents/Project/MachineLearning/Image/"
-    MODEL_PATH = "salmon_trout_binary_model.pth"
+    MODEL_PATH = "mobilenet_v2_best.pth"
     
     evaluate_model(MODEL_PATH, DATA_DIR)
