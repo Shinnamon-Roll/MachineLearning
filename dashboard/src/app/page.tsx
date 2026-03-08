@@ -32,12 +32,6 @@ const fallbackLearningCurveData = [
   { epoch: 1, loss_m1: 0.8, loss_m2: 0.9, val_loss_m1: 0.75, val_loss_m2: 0.85 },
 ];
 
-const dataSplitData = [
-  { name: "Train", value: 80 },
-  { name: "Validation", value: 10 },
-  { name: "Test", value: 10 },
-];
-
 const COLORS = ["#ffffff", "#a3a3a3", "#525252"];
 
 type Metrics = {
@@ -50,6 +44,11 @@ type Metrics = {
   params?: string;
   inference?: string;
   size?: string;
+  split_counts?: {
+    train: number;
+    val: number;
+    test: number;
+  };
 };
 
 type TrainingHistory = {
@@ -66,6 +65,11 @@ export default function Home() {
   const [metricsM1, setMetricsM1] = useState<Metrics | null>(null);
   const [metricsM2, setMetricsM2] = useState<Metrics | null>(null);
   const [chartData, setChartData] = useState<any[]>(fallbackLearningCurveData);
+  const [dataSplitData, setDataSplitData] = useState([
+    { name: "Train", value: 80 },
+    { name: "Validation", value: 10 },
+    { name: "Test", value: 10 },
+  ]);
 
   const [predictionM1, setPredictionM1] = useState<any>(null);
   const [predictionM2, setPredictionM2] = useState<any>(null);
@@ -76,11 +80,19 @@ export default function Home() {
         // Fetch Metrics
         const m1Res = await fetch('/data/metrics.json');
         const m1Data = await m1Res.json();
-        setMetricsM1({ ...m1Data, params: "7.0M", inference: "45ms", size: "29MB" });
+        setMetricsM1(m1Data);
+
+        if (m1Data.split_counts) {
+            setDataSplitData([
+                { name: "Train", value: m1Data.split_counts.train },
+                { name: "Validation", value: m1Data.split_counts.val },
+                { name: "Test", value: m1Data.split_counts.test },
+            ]);
+        }
 
         const m2Res = await fetch('/data/metrics_model2.json');
         const m2Data = await m2Res.json();
-        setMetricsM2({ ...m2Data, params: "2.2M", inference: "12ms", size: "9MB" });
+        setMetricsM2(m2Data);
 
         // Fetch Training History
         const h1Res = await fetch('/data/training_history.json');

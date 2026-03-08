@@ -1,3 +1,7 @@
 torch
 torchvision
 Pillow
+numpy
+matplotlib
+seaborn
+scikit-learn

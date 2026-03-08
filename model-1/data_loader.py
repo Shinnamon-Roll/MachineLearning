@@ -1,6 +1,6 @@
 import os
 from PIL import Image
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
 class SubsetWithTransform(Dataset):
@@ -18,15 +18,12 @@ class SubsetWithTransform(Dataset):
         return len(self.subset)
 
 class SalmonTroutDataset(Dataset):
-    def __init__(self, root_dir, transform=None, mode='train'):
+    def __init__(self, root_dir, transform=None, split='train'):
         """
         Args:
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied on a sample.
-            mode (string): 'train', 'test', or 'all'. 
-                           'train' will combine 'Salmon Train', 'Salmon valid' and 'Trout train'.
-                           'test' will combine 'Salmon Test' and 'Trout test'.
-                           'all' will load all available images.
+            split (string): 'train', 'val', 'test', or 'all'.
         """
         self.root_dir = root_dir
         self.transform = transform
@@ -41,33 +38,46 @@ class SalmonTroutDataset(Dataset):
         salmon_base = os.path.join(root_dir, 'Salmon!')
         trout_base = os.path.join(root_dir, 'Trout!')
         
-        if mode == 'all':
-            # Load everything
-            self._add_images_from_folder(os.path.join(salmon_base, 'Salmon Train'), 0)
-            self._add_images_from_folder(os.path.join(salmon_base, 'Salmon valid'), 0)
-            self._add_images_from_folder(os.path.join(salmon_base, 'Salmon Test'), 0)
-            self._add_images_from_folder(os.path.join(trout_base, 'Trout train'), 1)
-            self._add_images_from_folder(os.path.join(trout_base, 'Trout test'), 1)
-        elif mode == 'train':
-            # Salmon Training Data
-            self._add_images_from_folder(os.path.join(salmon_base, 'Salmon Train'), 0)
-            self._add_images_from_folder(os.path.join(salmon_base, 'Salmon valid'), 0)
+        # Define the exact folder names for each split
+        # Note the case sensitivity: Salmon Train/Test/valid vs Trout train/test/valid
+        
+        folders_to_load = []
+        
+        if split == 'all':
+            folders_to_load = [
+                (os.path.join(salmon_base, 'Salmon Train'), 0),
+                (os.path.join(salmon_base, 'Salmon valid'), 0),
+                (os.path.join(salmon_base, 'Salmon Test'), 0),
+                (os.path.join(trout_base, 'Trout train'), 1),
+                (os.path.join(trout_base, 'Trout valid'), 1),
+                (os.path.join(trout_base, 'Trout test'), 1),
+            ]
+        elif split == 'train':
+            folders_to_load = [
+                (os.path.join(salmon_base, 'Salmon Train'), 0),
+                (os.path.join(trout_base, 'Trout train'), 1),
+            ]
+        elif split == 'val':
+            folders_to_load = [
+                (os.path.join(salmon_base, 'Salmon valid'), 0),
+                (os.path.join(trout_base, 'Trout valid'), 1),
+            ]
+        elif split == 'test':
+            folders_to_load = [
+                (os.path.join(salmon_base, 'Salmon Test'), 0),
+                (os.path.join(trout_base, 'Trout test'), 1),
+            ]
             
-            # Trout Training Data
-            self._add_images_from_folder(os.path.join(trout_base, 'Trout train'), 1)
+        for folder_path, label in folders_to_load:
+            self._add_images_from_folder(folder_path, label)
             
-        elif mode == 'test':
-            # Salmon Testing Data
-            self._add_images_from_folder(os.path.join(salmon_base, 'Salmon Test'), 0)
-            
-            # Trout Testing Data
-            self._add_images_from_folder(os.path.join(trout_base, 'Trout test'), 1)
-            
-        print(f"Loaded {len(self.image_paths)} images for mode: {mode}")
+        print(f"Loaded {len(self.image_paths)} images for split: {split}")
 
     def _add_images_from_folder(self, folder_path, label):
         if not os.path.exists(folder_path):
             print(f"Warning: Folder not found: {folder_path}")
+            # Try to be helpful with case sensitivity or common typos if needed
+            # But for now, strict path following
             return
             
         for filename in os.listdir(folder_path):
@@ -88,8 +98,6 @@ class SalmonTroutDataset(Dataset):
             image = Image.open(img_path).convert('RGB')
         except Exception as e:
             print(f"Error loading image {img_path}: {e}")
-            # Return a dummy image or handle error appropriately
-            # For simplicity, we might just skip or error out, but here let's try to return the next one
             return self.__getitem__((idx + 1) % len(self))
 
         if self.transform:
@@ -97,43 +105,39 @@ class SalmonTroutDataset(Dataset):
 
         return image, label, img_path
 
-def get_dataloaders(data_dir, batch_size=32, split_strategy=(0.8, 0.1, 0.1)):
+def get_dataloaders(data_dir, batch_size=32, split_strategy=None):
+    """
+    Args:
+        data_dir (string): Root directory of the dataset.
+        batch_size (int): Batch size for DataLoader.
+        split_strategy (tuple): IGNORED in this version as we use pre-split folders.
+                                Kept for backward compatibility with existing calls.
+    """
+    
     # Data Augmentation for Training
     train_transforms = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(10),
+        transforms.RandomRotation(15),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    # Transforms for Testing (No augmentation)
-    test_transforms = transforms.Compose([
+    # Transforms for Validation/Test (Resize + Normalize only)
+    val_transforms = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    # Load full dataset first
-    full_dataset = SalmonTroutDataset(data_dir, transform=None, mode='all')
-    total_size = len(full_dataset)
-    
-    train_size = int(split_strategy[0] * total_size)
-    val_size = int(split_strategy[1] * total_size)
-    test_size = total_size - train_size - val_size
-    
-    import torch
-    train_subset, val_subset, test_subset = random_split(
-        full_dataset, [train_size, val_size, test_size],
-        generator=torch.Generator().manual_seed(42)
-    )
+    # Create Datasets for each split
+    train_dataset = SalmonTroutDataset(data_dir, transform=train_transforms, split='train')
+    val_dataset = SalmonTroutDataset(data_dir, transform=val_transforms, split='val')
+    test_dataset = SalmonTroutDataset(data_dir, transform=val_transforms, split='test')
 
-    train_dataset = SubsetWithTransform(train_subset, transform=train_transforms)
-    val_dataset = SubsetWithTransform(val_subset, transform=test_transforms)
-    test_dataset = SubsetWithTransform(test_subset, transform=test_transforms)
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+    # Create DataLoaders
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     return train_loader, val_loader, test_loader

@@ -140,6 +140,72 @@ def train_binary_model(data_dir, batch_size=32, num_epochs=15, learning_rate=0.0
     # Load best model weights
     model.load_state_dict(best_model_wts)
     print("\nTraining Success!")
+
+    # --- Test Phase ---
+    print("\nEvaluating on Test Set...")
+    model.eval()
+    all_preds = []
+    all_labels = []
+    
+    with torch.no_grad():
+        for inputs, labels, _ in test_loader:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+            
+    # Calculate Metrics
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+    
+    test_acc = accuracy_score(all_labels, all_preds)
+    test_prec = precision_score(all_labels, all_preds, average='weighted', zero_division=0)
+    test_rec = recall_score(all_labels, all_preds, average='weighted', zero_division=0)
+    test_f1 = f1_score(all_labels, all_preds, average='weighted', zero_division=0)
+    conf_matrix = confusion_matrix(all_labels, all_preds).tolist()
+    
+    # Calculate Model Stats
+    total_params = sum(p.numel() for p in model.parameters())
+    
+    # Calculate inference time (approximate per image using last batch)
+    start_time = time.time()
+    with torch.no_grad():
+        _ = model(inputs)
+    end_time = time.time()
+    inference_ms = (end_time - start_time) * 1000 / inputs.size(0)
+    
+    # Calculate size
+    model_path = 'best_model.pth'
+    model_size_mb = os.path.getsize(model_path) / (1024 * 1024) if os.path.exists(model_path) else 0
+
+    print(f"Test Accuracy: {test_acc:.4f}")
+    
+    # Save metrics to JSON
+    metrics = {
+        "model_name": "DenseNet121",
+        "accuracy": test_acc,
+        "precision": test_prec,
+        "recall": test_rec,
+        "f1_score": test_f1,
+        "confusion_matrix": conf_matrix,
+        "classes": ["Salmon", "Trout"],
+        "test_samples": len(all_labels),
+        "params": f"{total_params/1000000:.1f}M",
+        "inference": f"{inference_ms:.0f}ms",
+        "size": f"{model_size_mb:.1f}MB",
+        "split_counts": {
+            "train": dataset_sizes['train'],
+            "val": dataset_sizes['val'],
+            "test": len(test_loader.dataset)
+        }
+    }
+    
+    metrics_path = "../dashboard/public/data/metrics.json"
+    with open(metrics_path, "w") as f:
+        json.dump(metrics, f, indent=4)
+    print(f"Metrics saved to {metrics_path}")
+
     return model
 
 if __name__ == "__main__":

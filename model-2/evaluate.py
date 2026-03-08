@@ -17,10 +17,16 @@ def evaluate_model(model_path, data_dir, batch_size=32):
     device = torch.device("mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"))
     print(f"Using device: {device}")
 
-    # Load DataLoaders (We only need test/val loader here)
-    # Note: get_dataloaders returns (train_loader, val_loader)
-    # We use the val_loader as the test set here
-    _, test_loader = get_dataloaders(data_dir, batch_size)
+    # Load DataLoaders (We need all loaders to count splits)
+    # Note: get_dataloaders returns (train_loader, val_loader, test_loader)
+    train_loader, val_loader, test_loader = get_dataloaders(data_dir, batch_size)
+
+    # Calculate split counts
+    split_counts = {
+        "train": len(train_loader.dataset),
+        "val": len(val_loader.dataset),
+        "test": len(test_loader.dataset)
+    }
     
     # Initialize Model
     model = CustomMobileNetV2(num_classes=2, pretrained=False)
@@ -80,6 +86,23 @@ def evaluate_model(model_path, data_dir, batch_size=32):
     print("\nClassification Report:")
     print(classification_report(all_labels, all_preds, target_names=classes))
 
+    # Calculate Model Stats
+    total_params = sum(p.numel() for p in model.parameters())
+    
+    # Calculate inference time
+    import time
+    start_time = time.time()
+    dummy_input = torch.randn(1, 3, 224, 224).to(device)
+    for _ in range(10):
+        _ = model(dummy_input)
+    end_time = time.time()
+    avg_inference_ms = ((end_time - start_time) / 10) * 1000
+
+    # Calculate model size
+    model_size_mb = 0
+    if os.path.exists(model_path):
+        model_size_mb = os.path.getsize(model_path) / (1024 * 1024)
+
     # Save metrics to JSON for dashboard
     metrics_data = {
         "model_name": "CustomMobileNetV2",
@@ -89,11 +112,15 @@ def evaluate_model(model_path, data_dir, batch_size=32):
         "f1_score": float(f1),
         "confusion_matrix": cm.tolist(),
         "classes": classes,
-        "test_samples": len(all_labels)
+        "test_samples": len(all_labels),
+        "params": f"{total_params/1000000:.1f}M",
+        "inference": f"{avg_inference_ms:.0f}ms",
+        "size": f"{model_size_mb:.1f}MB",
+        "split_counts": split_counts
     }
     
     # Save to model-2 specific file
-    json_path = "../dashboard/public/data/metrics_model2.json"
+    json_path = "/Users/shinnamon/Documents/Project/MachineLearning/dashboard/public/data/metrics_model2.json"
     os.makedirs(os.path.dirname(json_path), exist_ok=True)
     with open(json_path, "w") as f:
         json.dump(metrics_data, f, indent=4)
@@ -107,13 +134,13 @@ def evaluate_model(model_path, data_dir, batch_size=32):
     plt.title('Confusion Matrix (MobileNetV2)')
     
     # Save confusion matrix image
-    cm_path = '../dashboard/public/data/confusion_matrix_model2.png'
+    cm_path = '/Users/shinnamon/Documents/Project/MachineLearning/dashboard/public/data/confusion_matrix_model2.png'
     plt.savefig(cm_path) # Save to public/data too
     plt.savefig('confusion_matrix_model2.png')
     print(f"Confusion matrix saved to '{cm_path}'")
 
 if __name__ == "__main__":
     DATA_DIR = "/Users/shinnamon/Documents/Project/MachineLearning/Image/"
-    MODEL_PATH = "mobilenet_v2_best.pth"
+    MODEL_PATH = "model-2/mobilenet_v2_best.pth"
     
     evaluate_model(MODEL_PATH, DATA_DIR)
