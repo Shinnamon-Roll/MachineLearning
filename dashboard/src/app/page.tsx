@@ -73,6 +73,7 @@ export default function Home() {
 
   const [predictionM1, setPredictionM1] = useState<any>(null);
   const [predictionM2, setPredictionM2] = useState<any>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -128,6 +129,12 @@ export default function Home() {
     setIsProcessing(true);
     setPredictionM1(null);
     setPredictionM2(null);
+    
+    // Create preview URL
+    if (files && files[0]) {
+        const objectUrl = URL.createObjectURL(files[0]);
+        setPreviewImage(objectUrl);
+    }
 
     const formData = new FormData();
     formData.append("file", files[0]);
@@ -181,7 +188,7 @@ export default function Home() {
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            <div className="w-full">
+            <div className="w-full space-y-4">
               <Card className="h-full">
                  <CardHeader>
                     <CardTitle>Upload Image</CardTitle>
@@ -191,6 +198,24 @@ export default function Home() {
                     <FileUpload onChange={handleFileUpload} />
                  </CardContent>
               </Card>
+
+              {/* Image Preview */}
+              {previewImage && (
+                  <Card className="overflow-hidden border-neutral-800 bg-neutral-950">
+                      <CardHeader className="pb-2">
+                          <CardTitle className="text-sm text-neutral-400">Input Image</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex justify-center p-6 bg-black/40">
+                          <div className="relative w-64 h-64 rounded-lg overflow-hidden border border-neutral-800 shadow-2xl">
+                              <img 
+                                src={previewImage} 
+                                alt="Uploaded input" 
+                                className="w-full h-full object-cover"
+                              />
+                          </div>
+                      </CardContent>
+                  </Card>
+              )}
             </div>
 
             <div className="space-y-6">
