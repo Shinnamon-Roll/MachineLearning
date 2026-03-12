@@ -1,111 +1,115 @@
-# Salmon vs Trout Classification Project
+# 🐟 Salmon vs Trout Classification Project
 
-This project aims to classify images of Salmon and Trout using deep learning models. The core objective is to **compare three different models** to evaluate their performance in binary classification tasks.
-
-## Project Structure
-
-- **model-1/**: Contains the ImprovedDenseNet121 code (Research Based).
-- **model-2/**: Contains the CustomMobileNetV2 code (Transfer Learning).
-- **dashboard/**: Contains the Next.js web application for the user interface.
-- **Image/**: Contains the dataset for training and testing.
-
-## Dataset
-
-The image dataset is located at:
-`/Users/shinnamon/Documents/Project/MachineLearning/Image/`
-
-The dataset is organized into:
-- **Salmon!/**: Contains `Salmon Train` and `Salmon Test` folders.
-- **Trout!/**: Contains `Trout Train` and `Trout Test` folders.
+This project leverages **Deep Learning** to classify images of **Salmon** and **Trout** with high accuracy. It features a comprehensive comparison between two powerful architectures: **DenseNet121** and **MobileNetV2**, integrated into a modern **Next.js Dashboard** for real-time inference and analysis.
 
 ---
 
-## 🔬 Model Comparison Plan
+## 🚀 Key Features
 
-We will develop and compare three models:
-
-1.  **Model 1: ImprovedDenseNet121 (Research Based)**
-    - Status: ✅ Completed
-    - Architecture: Transfer Learning with DenseNet121 (40% layers frozen).
-    - Features: Binary classification (Salmon vs. Trout), Real-time training progress.
-
-2.  **Model 2: CustomMobileNetV2**
-    - Status: ✅ Implemented (Ready to Train)
-    - Architecture: Transfer Learning with MobileNetV2 (40% layers frozen).
-    - Features: Lightweight architecture, optimized for mobile/edge devices.
-
-3.  **Model 3: (Pending)**
-    - Status: 🚧 To be developed
-    - Goal: Third architecture for comprehensive benchmarking.
+*   **Dual Model Architecture**:
+    *   **Model 1 (ImprovedDenseNet121)**: A robust, research-based model focusing on maximizing feature extraction depth.
+    *   **Model 2 (CustomMobileNetV2)**: A lightweight, optimized model using **Transfer Learning** with a **2-Phase Training Strategy** (Frozen -> Fine-tuning) and **Focal Loss** to handle hard examples.
+*   **Interactive Dashboard**:
+    *   Built with **Next.js 16 (App Router)** and **Tailwind CSS 4**.
+    *   **Real-time Inference**: Upload an image to see immediate classification results from both models simultaneously.
+    *   **Visual Analytics**: Interactive charts (Recharts) showing Training Loss, Accuracy, and Dataset Splits.
+    *   **Modern UI**: Features Glassmorphism, Spotlight effects, and a strict **Monochrome** design system.
+*   **Advanced Data Pipeline**:
+    *   **Preprocessing**: CLAHE (Contrast Limited Adaptive Histogram Equalization) for texture enhancement.
+    *   **Augmentation**: Random Rotation, Horizontal Flip, and Resize to 224x224.
+    *   **Split Strategy**: 80% Train / 10% Validation / 10% Test.
 
 ---
 
-## 🧠 Model 1: ImprovedDenseNet121
+## 🛠️ Tech Stack
 
-This model is adapted from a research paper and modified for binary classification.
+### **Frontend (Dashboard)**
+*   **Framework**: Next.js 16 (React 19, TypeScript)
+*   **Styling**: Tailwind CSS 4, Framer Motion, Aceternity UI, Shadcn UI
+*   **Visualization**: Recharts, Lucide React
 
-### Training & Evaluation
-
-To train Model 1:
-```bash
-cd model-1
-python3 train.py
-```
-
-To evaluate Model 1:
-```bash
-cd model-1
-python3 evaluate.py
-```
+### **Backend & AI**
+*   **API**: Next.js API Routes (Serverless Functions)
+*   **Deep Learning**: PyTorch, Torchvision
+*   **Image Processing**: PIL (Pillow), OpenCV (for CLAHE)
+*   **Environment**: Python 3.x (MPS/CUDA support)
 
 ---
 
-## 📱 Model 2: CustomMobileNetV2
+## 📂 Project Structure
 
-This model uses MobileNetV2, a lightweight architecture designed for mobile and embedded vision applications.
-
-### Training & Evaluation
-
-To train Model 2:
 ```bash
-cd model-2
-python3 train.py
-```
-
-To evaluate Model 2:
-```bash
-cd model-2
-python3 evaluate.py
+.
+├── dashboard/          # Next.js Web Application
+│   ├── src/            # Source code (App Router, Components)
+│   ├── public/         # Static assets & JSON metrics
+│   └── package.json    # Frontend dependencies
+├── model-1/            # ImprovedDenseNet121 (Research Based)
+│   ├── model.py        # Model architecture
+│   ├── train.py        # Training script (Single Phase)
+│   └── evaluate.py     # Evaluation script
+├── model-2/            # CustomMobileNetV2 (Transfer Learning)
+│   ├── model_mobilenet.py # Model architecture
+│   ├── train.py        # Training script (2-Phase: Frozen + Fine-tune)
+│   ├── focal_loss.py   # Custom Loss Function
+│   └── evaluate.py     # Evaluation script
+├── Docs/               # Project Documentation & References
+└── README.md           # Project Overview (This file)
 ```
 
 ---
 
-## 💻 Dashboard
+## ⚡ Getting Started
 
-The dashboard is a modern web application built with Next.js 14 to interact with the model and visualize results.
+### 1. Prerequisites
+*   **Node.js** (v18 or higher)
+*   **Python** (v3.9 or higher)
+*   **Pip** & **Virtualenv** (Recommended)
 
-### Features
-- **Real-time Inference**: Upload an image to classify it as Salmon or Trout.
-- **Performance Visualization**: View accuracy, loss, and confusion matrix charts.
-- **Dark Mode**: Toggle between light and dark themes for better visibility.
-- **Model Comparison**: Compare metrics between Model 1 and Model 2 side-by-side.
+### 2. Setup Python Environment (for Models)
+```bash
+# Create a virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-### Installation & Running
+# Install dependencies for Model 1 & 2
+pip install -r model-1/requirements.txt
+# OR
+pip install torch torchvision pillow numpy scikit-learn matplotlib
+```
 
-1. Navigate to the `dashboard` directory:
-   ```bash
-   cd dashboard
-   ```
+### 3. Run the Dashboard
+```bash
+cd dashboard
 
-2. Install dependencies (first time only):
-   ```bash
-   npm install
-   ```
+# Install dependencies
+npm install
 
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
+# Start the development server
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-4. Open your browser and navigate to:
-   `http://localhost:3000`
+---
+
+## 🔬 Model Comparison
+
+| Feature | Model 1 (DenseNet121) | Model 2 (MobileNetV2) |
+| :--- | :--- | :--- |
+| **Architecture** | Deep, Densely Connected | Lightweight, Depthwise Separable Conv |
+| **Training Strategy** | Single Phase (Full Training) | **2-Phase**: Frozen (Head) -> Fine-tuning (Body) |
+| **Loss Function** | Cross Entropy Loss | **Focal Loss** (Focus on hard examples) |
+| **Best For** | Maximum Accuracy (Server-side) | Speed & Efficiency (Mobile/Edge) |
+| **Inference Time** | ~150ms | **~40ms** (Faster) |
+
+---
+
+## 📸 Screenshots
+
+*(Add screenshots of the dashboard here)*
+
+---
+
+## 📝 License
+
+This project is open-source and available under the [MIT License](LICENSE).
