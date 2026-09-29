@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,44 +28,26 @@ export async function POST(req: NextRequest) {
     const filepath = path.join(uploadsDir, filename);
     fs.writeFileSync(filepath, buffer);
 
-    // Paths to models and scripts
-    const model1Dir = path.resolve(process.cwd(), "../model-1");
-    const model2Dir = path.resolve(process.cwd(), "../model-2");
-    
-    // Check if model weights exist
-    const model1Weights = path.join(model1Dir, "salmon_trout_binary_model.pth");
-    const model2Weights = path.join(model2Dir, "mobilenet_v2_best.pth");
-    
-    const m1Exists = fs.existsSync(model1Weights);
-    const m2Exists = fs.existsSync(model2Weights);
+    // Both models are served by the same script; only --model differs
+    const mlDir = path.resolve(process.cwd(), "../ml");
+    const inferenceScript = path.join(mlDir, "inference.py");
 
-    // Run inference for Model 1
-    let m1Result = null;
-    if (m1Exists) {
-        try {
-            const { stdout } = await execAsync(`python3 "${path.join(model1Dir, 'inference.py')}" "${filepath}" --model_path "${model1Weights}"`);
-            m1Result = JSON.parse(stdout.trim());
-        } catch (error) {
-            console.error("Model 1 Error:", error);
-            m1Result = { error: "Inference failed" };
-        }
-    } else {
-        m1Result = { error: "Model weights not found" };
-    }
+    const runModel = async (name: "densenet" | "mobilenet") => {
+      const weights = path.join(mlDir, "weights", `${name}.pth`);
+      if (!fs.existsSync(weights)) {
+        return { error: "Model weights not found" };
+      }
+      try {
+        // execFile passes args without a shell, so the uploaded filename cannot inject commands
+        const { stdout } = await execFileAsync("python3", [inferenceScript, filepath, "--model", name]);
+        return JSON.parse(stdout.trim());
+      } catch (error) {
+        console.error(`${name} Error:`, error);
+        return { error: "Inference failed" };
+      }
+    };
 
-    // Run inference for Model 2
-    let m2Result = null;
-    if (m2Exists) {
-        try {
-             const { stdout } = await execAsync(`python3 "${path.join(model2Dir, 'inference.py')}" "${filepath}" --model_path "${model2Weights}"`);
-             m2Result = JSON.parse(stdout.trim());
-        } catch (error) {
-            console.error("Model 2 Error:", error);
-            m2Result = { error: "Inference failed" };
-        }
-    } else {
-        m2Result = { error: "Model weights not found" };
-    }
+    const [m1Result, m2Result] = await Promise.all([runModel("densenet"), runModel("mobilenet")]);
 
     // Cleanup uploaded file (optional, keeping it for now for debugging or display)
     // fs.unlinkSync(filepath);

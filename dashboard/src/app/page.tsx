@@ -49,7 +49,20 @@ type Metrics = {
     val: number;
     test: number;
   };
+  // Present when trained over several seeds: metric values are means across seeds
+  accuracy_std?: number;
+  f1_score_std?: number;
+  seeds?: { seed: number }[];
+  selected_seed?: number;
 };
+
+// "95.0 ± 1.2%" when a std is available, otherwise "95.0%"
+function formatPct(m: Metrics | null, key: "accuracy" | "f1_score") {
+  if (!m) return "...%";
+  const std = m[`${key}_std`];
+  const mean = (m[key] * 100).toFixed(1);
+  return std === undefined ? `${mean}%` : `${mean} ± ${(std * 100).toFixed(1)}%`;
+}
 
 type TrainingHistory = {
   train_loss: number[];
@@ -224,7 +237,7 @@ export default function Home() {
                  <CardHeader className="pb-2">
                    <div className="flex justify-between items-center">
                      <CardTitle className="text-xl text-white">Model 1: DenseNet121</CardTitle>
-                     <span className="text-xs font-mono text-neutral-400">Acc: {metricsM1 ? (metricsM1.accuracy * 100).toFixed(1) : "..."}%</span>
+                     <span className="text-xs font-mono text-neutral-400">Acc: {formatPct(metricsM1, "accuracy")}</span>
                    </div>
                  </CardHeader>
                  <CardContent>
@@ -260,7 +273,7 @@ export default function Home() {
                  <CardHeader className="pb-2">
                    <div className="flex justify-between items-center">
                      <CardTitle className="text-xl text-white">Model 2: MobileNetV2</CardTitle>
-                     <span className="text-xs font-mono text-neutral-400">Acc: {metricsM2 ? (metricsM2.accuracy * 100).toFixed(1) : "..."}%</span>
+                     <span className="text-xs font-mono text-neutral-400">Acc: {formatPct(metricsM2, "accuracy")}</span>
                    </div>
                  </CardHeader>
                  <CardContent>
@@ -313,7 +326,7 @@ export default function Home() {
             {/* Card B: Preprocessing */}
             <BentoGridItem
               title="Preprocessing Pipeline"
-              description="Resize (224x224) -> Normalization -> Augmentation (CLAHE, Random Crop)."
+              description="Resize (224x224) -> CLAHE -> Normalization. Training adds Random Crop, Flip, Rotation, Color Jitter."
               header={<div className="flex flex-1 w-full h-full min-h-[6rem] rounded-none bg-neutral-900 items-center justify-center"><Layers className="h-10 w-10 text-neutral-300" /></div>}
               icon={<FileImage className="h-4 w-4 text-neutral-500" />}
               className="md:col-span-1"
@@ -322,7 +335,7 @@ export default function Home() {
             {/* Card C: Data Split */}
             <BentoGridItem
               title="Dataset Split"
-              description="Train (80%) / Validation (10%) / Test (10%) strategy."
+              description="Stratified Train (80%) / Validation (10%) / Test (10%) split with a fixed seed, shared by both models."
               header={
                 <div className="flex flex-1 w-full h-full min-h-[6rem] rounded-none bg-neutral-900 items-center justify-center">
                   <ResponsiveContainer width="100%" height={150}>
@@ -394,7 +407,10 @@ export default function Home() {
               <Card className="h-full">
                 <CardHeader>
                   <CardTitle>Model Comparison</CardTitle>
-                  <CardDescription>Key technical specifications</CardDescription>
+                  <CardDescription>
+                    Identical training recipe; only the backbone differs.
+                    {metricsM1?.seeds && ` Mean ± SD over ${metricsM1.seeds.length} seeds.`}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -408,8 +424,13 @@ export default function Home() {
                     <TableBody>
                       <TableRow className="border-neutral-800 hover:bg-neutral-900/50">
                         <TableCell className="font-medium text-neutral-300">Accuracy</TableCell>
-                        <TableCell className="text-white font-bold">{metricsM1 ? (metricsM1.accuracy * 100).toFixed(1) : "..."}%</TableCell>
-                        <TableCell className="text-neutral-400">{metricsM2 ? (metricsM2.accuracy * 100).toFixed(1) : "..."}%</TableCell>
+                        <TableCell className="text-white font-bold">{formatPct(metricsM1, "accuracy")}</TableCell>
+                        <TableCell className="text-neutral-400">{formatPct(metricsM2, "accuracy")}</TableCell>
+                      </TableRow>
+                      <TableRow className="border-neutral-800 hover:bg-neutral-900/50">
+                        <TableCell className="font-medium text-neutral-300">F1 Score</TableCell>
+                        <TableCell className="text-white">{formatPct(metricsM1, "f1_score")}</TableCell>
+                        <TableCell className="text-neutral-400">{formatPct(metricsM2, "f1_score")}</TableCell>
                       </TableRow>
                       <TableRow className="border-neutral-800 hover:bg-neutral-900/50">
                         <TableCell className="font-medium text-neutral-300">Params</TableCell>
