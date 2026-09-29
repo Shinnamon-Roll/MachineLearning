@@ -1,7 +1,6 @@
 torch
 torchvision
-Pillow
 numpy
-matplotlib
-seaborn
+Pillow
 scikit-learn
+opencv-python-headless
