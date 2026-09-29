@@ -1,23 +1,25 @@
 # 🐟 Salmon vs Trout Classification Project
 
-This project leverages **Deep Learning** to classify images of **Salmon** and **Trout** with high accuracy. It features a comprehensive comparison between two powerful architectures: **DenseNet121** and **MobileNetV2**, integrated into a modern **Next.js Dashboard** for real-time inference and analysis.
+This project uses **Deep Learning** to classify images of **Salmon** and **Trout**, and runs a **controlled comparison** of two architectures, **DenseNet121** and **MobileNetV2**. Both models use the exact same training recipe, data split and evaluation protocol, so any difference in results comes from the backbone alone. A **Next.js Dashboard** shows real-time inference and the comparison.
 
 ---
 
 ## 🚀 Key Features
 
-*   **Dual Model Architecture**:
-    *   **Model 1 (ImprovedDenseNet121)**: A robust, research-based model focusing on maximizing feature extraction depth.
-    *   **Model 2 (CustomMobileNetV2)**: A lightweight, optimized model using **Transfer Learning** with a **2-Phase Training Strategy** (Frozen -> Fine-tuning) and **Focal Loss** to handle hard examples.
+*   **Fair Model Comparison**:
+    *   **DenseNet121**: deep, densely connected backbone.
+    *   **MobileNetV2**: lightweight backbone built from depthwise separable convolutions.
+    *   **One shared recipe** (`ml/config.py`): **2-phase training**. The backbone is frozen at first so only the head trains, then everything is fine-tuned at lr ×0.1. Both models also share **Focal Loss** and ReduceLROnPlateau.
+    *   **3 seeds per model**: results are reported as mean ± SD.
 *   **Interactive Dashboard**:
     *   Built with **Next.js 16 (App Router)** and **Tailwind CSS 4**.
     *   **Real-time Inference**: Upload an image to see immediate classification results from both models simultaneously.
     *   **Visual Analytics**: Interactive charts (Recharts) showing Training Loss, Accuracy, and Dataset Splits.
     *   **Modern UI**: Features Glassmorphism, Spotlight effects, and a strict **Monochrome** design system.
-*   **Advanced Data Pipeline**:
-    *   **Preprocessing**: CLAHE (Contrast Limited Adaptive Histogram Equalization) for texture enhancement.
-    *   **Augmentation**: Random Rotation, Horizontal Flip, and Resize to 224x224.
-    *   **Split Strategy**: 80% Train / 10% Validation / 10% Test.
+*   **Data Pipeline**:
+    *   **Preprocessing**: CLAHE (Contrast Limited Adaptive Histogram Equalization) for texture enhancement, used in training, evaluation and inference.
+    *   **Augmentation**: Random Resized Crop, Horizontal Flip, Rotation, Color Jitter and Translation, all at 224x224.
+    *   **Split Strategy**: stratified 80% Train / 10% Validation / 10% Test with a fixed seed. The split is saved in `ml/splits.json`, and byte-identical images are grouped so they never leak across splits.
 
 ---
 
@@ -41,18 +43,17 @@ This project leverages **Deep Learning** to classify images of **Salmon** and **
 ```bash
 .
 ├── dashboard/          # Next.js Web Application
-│   ├── src/            # Source code (App Router, Components)
-│   ├── public/         # Static assets & JSON metrics
-│   └── package.json    # Frontend dependencies
-├── model-1/            # ImprovedDenseNet121 (Research Based)
-│   ├── model.py        # Model architecture
-│   ├── train.py        # Training script (Single Phase)
-│   └── evaluate.py     # Evaluation script
-├── model-2/            # CustomMobileNetV2 (Transfer Learning)
-│   ├── model_mobilenet.py # Model architecture
-│   ├── train.py        # Training script (2-Phase: Frozen + Fine-tune)
-│   ├── focal_loss.py   # Custom Loss Function
-│   └── evaluate.py     # Evaluation script
+│   ├── src/            # Source code (App Router, Components, /api/predict)
+│   └── public/data/    # Metrics & training history JSON written by ml/train.py
+├── ml/                 # All Python code, shared by both models
+│   ├── config.py       # Single training/evaluation config for both models
+│   ├── models.py       # DenseNet121 + MobileNetV2 definitions and registry
+│   ├── data.py         # Split, CLAHE, transforms, data loaders
+│   ├── train.py        # Trains both models with the identical recipe
+│   ├── evaluate.py     # Test metrics + latency measurement
+│   ├── inference.py    # Single-image prediction (used by the dashboard)
+│   └── splits.json     # Fixed train/val/test split
+├── Image/              # Dataset: Image/Salmon, Image/Trout (not in git)
 ├── Docs/               # Project Documentation & References
 └── README.md           # Project Overview (This file)
 ```
@@ -66,16 +67,16 @@ This project leverages **Deep Learning** to classify images of **Salmon** and **
 *   **Python** (v3.9 or higher)
 *   **Pip** & **Virtualenv** (Recommended)
 
-### 2. Setup Python Environment (for Models)
+### 2. Setup Python Environment & Train
 ```bash
-# Create a virtual environment
 python3 -m venv venv
 source venv/bin/activate
+pip install -r ml/requirements.txt
 
-# Install dependencies for Model 1 & 2
-pip install -r model-1/requirements.txt
-# OR
-pip install torch torchvision pillow numpy scikit-learn matplotlib
+# Put the dataset at Image/Salmon and Image/Trout, then:
+python ml/test_setup.py                  # quick sanity checks
+python ml/train.py --model all --quick   # smoke test (1+1 epochs, one seed)
+python ml/train.py --model all           # full run: 3 seeds per model
 ```
 
 ### 3. Run the Dashboard
@@ -94,13 +95,15 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🔬 Model Comparison
 
-| Feature | Model 1 (DenseNet121) | Model 2 (MobileNetV2) |
+Both models share every setting: data split, preprocessing, augmentation, epochs (15 frozen + 15 fine-tune), optimizer, learning rate, scheduler, loss and seeds. Only the backbone differs.
+
+| Feature | DenseNet121 | MobileNetV2 |
 | :--- | :--- | :--- |
 | **Architecture** | Deep, Densely Connected | Lightweight, Depthwise Separable Conv |
-| **Training Strategy** | Single Phase (Full Training) | **2-Phase**: Frozen (Head) -> Fine-tuning (Body) |
-| **Loss Function** | Cross Entropy Loss | **Focal Loss** (Focus on hard examples) |
-| **Best For** | Maximum Accuracy (Server-side) | Speed & Efficiency (Mobile/Edge) |
-| **Inference Time** | ~150ms | **~40ms** (Faster) |
+| **Parameters** | ~7.0M | ~2.2M |
+| **Accuracy / F1 / Latency** | see dashboard (mean ± SD over 3 seeds) | see dashboard (mean ± SD over 3 seeds) |
+
+Latency is measured the same way for both models: batch size 1, 10 warm-up runs, then the mean of 50 synchronized runs on the same device.
 
 ---
 
