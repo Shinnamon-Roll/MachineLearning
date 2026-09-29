@@ -85,3 +85,6 @@ model.safetensors
 
 # System
 Trash/
+
+# Browser automation artifacts
+.playwright-mcp/

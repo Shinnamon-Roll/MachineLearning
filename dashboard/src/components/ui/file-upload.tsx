@@ -6,15 +6,19 @@ import { Upload } from "lucide-react";
 
 export const FileUpload = ({
   onChange,
+  previewUrl,
+  scanning = false,
 }: {
   onChange?: (files: File[]) => void;
+  previewUrl?: string | null;
+  scanning?: boolean;
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (newFiles: File[]) => {
     setFile(newFiles[0]);
-    onChange && onChange(newFiles);
+    onChange?.(newFiles);
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,7 +36,7 @@ export const FileUpload = ({
     <div className="w-full">
       <div
         className={cn(
-          "p-10 group/file block rounded-none cursor-pointer w-full relative overflow-hidden",
+          "min-h-72 flex items-center justify-center p-10 group/file rounded-none cursor-pointer w-full relative overflow-hidden",
           "border border-dashed border-neutral-700 transition duration-500",
           isDragging ? "bg-neutral-900 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "bg-black hover:bg-neutral-900"
         )}
@@ -55,42 +59,34 @@ export const FileUpload = ({
           ref={fileInputRef}
           id="file-upload-handle"
           type="file"
+          accept="image/*"
           onChange={onFileChange}
+          // input.click() bubbles to the wrapper's onClick; stop it so the picker opens once
+          onClick={(e) => e.stopPropagation()}
           className="hidden"
         />
         
-        <div className="flex flex-col items-center justify-center">
-          {!file && (
-             <Upload className="w-10 h-10 text-neutral-400 mb-4" />
-          )}
-          <p className="font-bold text-neutral-300 text-lg mt-2">
-            {file ? file.name : "Drag & Drop or Click to Upload"}
+        {previewUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={previewUrl} alt="Uploaded fish" className="absolute inset-0 w-full h-full object-contain bg-black" />
+        )}
+
+        <div className={cn("relative z-10 flex flex-col items-center justify-center text-center", previewUrl && "self-end")}>
+          {!previewUrl && <Upload className="w-10 h-10 text-neutral-400 mb-4 group-hover/file:text-white transition" />}
+          <p className={cn("font-bold text-neutral-300", previewUrl ? "text-xs bg-black/70 px-3 py-1" : "text-lg mt-2")}>
+            {file ? `${file.name} · click to change` : "Drag & Drop or Click to Upload"}
           </p>
-          {!file && (
-             <p className="font-normal text-neutral-500 text-sm mt-2">
-               Upload Salmon or Trout Image
-             </p>
-          )}
+          {!file && <p className="font-normal text-neutral-500 text-sm mt-2">JPG or PNG of a salmon or trout</p>}
         </div>
 
-        {/* Scanning Effect */}
-        {file && (
+        {/* Scanning effect while the models run */}
+        {scanning && (
           <motion.div
             initial={{ top: 0 }}
             animate={{ top: "100%" }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "linear",
-            }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             className="absolute left-0 right-0 h-[2px] bg-white shadow-[0_0_20px_rgba(255,255,255,0.8)] z-20"
           />
-        )}
-        
-        {file && (
-           <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center pointer-events-none">
-             {/* Optional: Preview image could go here if we read it */}
-           </div>
         )}
       </div>
     </div>
