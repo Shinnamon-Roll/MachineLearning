@@ -52,9 +52,10 @@ This project uses **Deep Learning** to classify images of **Salmon** and **Trout
 │   ├── train.py        # Trains both models with the identical recipe
 │   ├── evaluate.py     # Test metrics + latency measurement
 │   ├── inference.py    # Single-image prediction (used by the dashboard)
+│   ├── plot_results.py # Comparison figures -> Docs/figures/
 │   └── splits.json     # Fixed train/val/test split
 ├── Image/              # Dataset: Image/Salmon, Image/Trout (not in git)
-├── Docs/               # Project Documentation & References
+├── Docs/               # Documentation, references and result figures (Docs/figures)
 └── README.md           # Project Overview (This file)
 ```
 
@@ -97,19 +98,41 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 Both models share every setting: data split, preprocessing, augmentation, epochs (15 frozen + 15 fine-tune), optimizer, learning rate, scheduler, loss and seeds. Only the backbone differs.
 
-| Feature | DenseNet121 | MobileNetV2 |
-| :--- | :--- | :--- |
-| **Architecture** | Deep, Densely Connected | Lightweight, Depthwise Separable Conv |
-| **Parameters** | ~7.0M | ~2.2M |
-| **Accuracy / F1 / Latency** | see dashboard (mean ± SD over 3 seeds) | see dashboard (mean ± SD over 3 seeds) |
+### Results (test set, 140 images, mean ± SD over 3 seeds)
 
-Latency is measured the same way for both models: batch size 1, 10 warm-up runs, then the mean of 50 synchronized runs on the same device.
+| Metric | DenseNet121 | MobileNetV2 |
+| :--- | :--- | :--- |
+| **Accuracy** | **73.6 ± 0.0%** | 68.6 ± 1.9% |
+| **F1 score** | **73.0 ± 0.1%** | 68.4 ± 1.9% |
+| **Precision** | **76.0 ± 0.5%** | 69.2 ± 2.0% |
+| **Latency / image** | 10.4 ms | **3.7 ms** (2.8× faster) |
+| **Weights size** | 27.1 MB | **8.7 MB** |
+| **Parameters** | 7.0M | **2.2M** |
+
+Latency is measured the same way for both models: batch size 1, 10 warm-up runs, then the mean of 50 synchronized runs on the same device (Apple MPS).
+
+![Test metrics](Docs/figures/test_metrics.png)
+
+**Takeaways**
+- **DenseNet121 is about 5 points more accurate** and much more stable across seeds.
+- **MobileNetV2 is 2.8× faster and 3× smaller.** It is the better choice for mobile or edge deployment if the accuracy drop is acceptable.
+- **Both models confuse trout for salmon.** Only about 60% of trout are recognized, compared with 78–88% of salmon. Because it happens with both backbones, the cause is likely the data or the recipe rather than the architecture.
+- **Both models are still undertrained.** The best epoch was 25–29 out of 30 for every seed, and validation accuracy was still rising.
+
+![Learning curves](Docs/figures/learning_curves.png)
+![Confusion matrices](Docs/figures/confusion_matrices.png)
+![Speed and size](Docs/figures/efficiency.png)
+
+Regenerate the figures after retraining:
+```bash
+python ml/plot_results.py   # writes Docs/figures/*.png
+```
 
 ---
 
 ## 📸 Screenshots
 
-*(Add screenshots of the dashboard here)*
+![Dashboard](Docs/figures/dashboard.png)
 
 ---
 
