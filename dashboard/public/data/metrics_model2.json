@@ -1,0 +1,125 @@
+{
+  "model_name": "MobileNetV2",
+  "accuracy": 0.6857142857142857,
+  "accuracy_std": 0.018898223650461357,
+  "precision": 0.6921752570645228,
+  "precision_std": 0.020142568854394183,
+  "recall": 0.6857142857142857,
+  "recall_std": 0.018898223650461357,
+  "f1_score": 0.6837797191868243,
+  "f1_score_std": 0.01874120382156001,
+  "confusion_matrix": [
+    [
+      54,
+      15
+    ],
+    [
+      27,
+      44
+    ]
+  ],
+  "recall_per_class": {
+    "Salmon": 0.782608695652174,
+    "Trout": 0.6197183098591549
+  },
+  "classes": [
+    "Salmon",
+    "Trout"
+  ],
+  "test_samples": 140,
+  "params": "2.2M",
+  "inference": "3.7ms",
+  "size": "8.7MB",
+  "split_counts": {
+    "train": 1136,
+    "val": 149,
+    "test": 140
+  },
+  "selected_seed": 2,
+  "seeds": [
+    {
+      "seed": 0,
+      "val_acc": 0.7449664429530202,
+      "best_epoch": 29,
+      "accuracy": 0.6642857142857143,
+      "precision": 0.6691964285714286,
+      "recall": 0.6642857142857143,
+      "f1_score": 0.6625829777579355,
+      "latency_ms": 3.6491216799186077
+    },
+    {
+      "seed": 1,
+      "val_acc": 0.7583892617449665,
+      "best_epoch": 28,
+      "accuracy": 0.6928571428571428,
+      "precision": 0.7005496816051905,
+      "recall": 0.6928571428571428,
+      "f1_score": 0.6906023336486913,
+      "latency_ms": 3.772962499933783
+    },
+    {
+      "seed": 2,
+      "val_acc": 0.7651006711409396,
+      "best_epoch": 29,
+      "accuracy": 0.7,
+      "precision": 0.7067796610169491,
+      "recall": 0.7,
+      "f1_score": 0.6981538461538461,
+      "latency_ms": 3.7638941800105385
+    }
+  ],
+  "device": "mps",
+  "config": {
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "split": {
+      "train": 0.8,
+      "val": 0.1,
+      "test": 0.1,
+      "seed": 42
+    },
+    "image_size": 224,
+    "batch_size": 32,
+    "num_workers": 2,
+    "phase1_epochs": 15,
+    "phase2_epochs": 15,
+    "lr": 0.0001,
+    "finetune_lr_factor": 0.1,
+    "scheduler": {
+      "type": "ReduceLROnPlateau",
+      "monitor": "val_loss",
+      "factor": 0.1,
+      "patience": 5
+    },
+    "loss": {
+      "type": "FocalLoss",
+      "gamma": 2.0,
+      "alpha": "train class ratio"
+    },
+    "clahe": {
+      "clip_limit": 2.0,
+      "tile_grid_size": [
+        8,
+        8
+      ]
+    },
+    "normalize_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "normalize_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "latency": {
+      "warmup": 10,
+      "runs": 50,
+      "batch_size": 1
+    }
+  }
+}

@@ -72,9 +72,9 @@ venv.bak/
 model.safetensors
 
 # Dataset
-Image/
-data/
-dataset/
+/Image/
+/data/
+/dataset/
 
 # Jupyter Notebook
 .ipynb_checkpoints

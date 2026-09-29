@@ -1,0 +1,125 @@
+{
+  "model_name": "DenseNet121",
+  "accuracy": 0.7357142857142858,
+  "accuracy_std": 0.0,
+  "precision": 0.7602606976356976,
+  "precision_std": 0.0049635753836216375,
+  "recall": 0.7357142857142858,
+  "recall_std": 0.0,
+  "f1_score": 0.7301928791463511,
+  "f1_score_std": 0.00112162680672425,
+  "confusion_matrix": [
+    [
+      61,
+      8
+    ],
+    [
+      29,
+      42
+    ]
+  ],
+  "recall_per_class": {
+    "Salmon": 0.8840579710144928,
+    "Trout": 0.5915492957746479
+  },
+  "classes": [
+    "Salmon",
+    "Trout"
+  ],
+  "test_samples": 140,
+  "params": "7.0M",
+  "inference": "10.4ms",
+  "size": "27.1MB",
+  "split_counts": {
+    "train": 1136,
+    "val": 149,
+    "test": 140
+  },
+  "selected_seed": 1,
+  "seeds": [
+    {
+      "seed": 0,
+      "val_acc": 0.785234899328859,
+      "best_epoch": 27,
+      "accuracy": 0.7357142857142858,
+      "precision": 0.7554070929070928,
+      "recall": 0.7357142857142858,
+      "f1_score": 0.7312937851853496,
+      "latency_ms": 10.430937499986612
+    },
+    {
+      "seed": 1,
+      "val_acc": 0.8053691275167785,
+      "best_epoch": 28,
+      "accuracy": 0.7357142857142858,
+      "precision": 0.7600476190476191,
+      "recall": 0.7357142857142858,
+      "f1_score": 0.7302332316054443,
+      "latency_ms": 10.713229999964824
+    },
+    {
+      "seed": 2,
+      "val_acc": 0.7986577181208053,
+      "best_epoch": 25,
+      "accuracy": 0.7357142857142858,
+      "precision": 0.765327380952381,
+      "recall": 0.7357142857142858,
+      "f1_score": 0.7290516206482593,
+      "latency_ms": 10.06990918001975
+    }
+  ],
+  "device": "mps",
+  "config": {
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "split": {
+      "train": 0.8,
+      "val": 0.1,
+      "test": 0.1,
+      "seed": 42
+    },
+    "image_size": 224,
+    "batch_size": 32,
+    "num_workers": 2,
+    "phase1_epochs": 15,
+    "phase2_epochs": 15,
+    "lr": 0.0001,
+    "finetune_lr_factor": 0.1,
+    "scheduler": {
+      "type": "ReduceLROnPlateau",
+      "monitor": "val_loss",
+      "factor": 0.1,
+      "patience": 5
+    },
+    "loss": {
+      "type": "FocalLoss",
+      "gamma": 2.0,
+      "alpha": "train class ratio"
+    },
+    "clahe": {
+      "clip_limit": 2.0,
+      "tile_grid_size": [
+        8,
+        8
+      ]
+    },
+    "normalize_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "normalize_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "latency": {
+      "warmup": 10,
+      "runs": 50,
+      "batch_size": 1
+    }
+  }
+}
