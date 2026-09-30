@@ -66,6 +66,9 @@ venv.bak/
 
 # Machine Learning
 *.pth
+# The two served models are committed so the dashboard runs without training
+!ml/weights/densenet.pth
+!ml/weights/mobilenet.pth
 *.pt
 *.h5
 *.pkl

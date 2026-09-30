@@ -68,28 +68,33 @@ This project uses **Deep Learning** to classify images of **Salmon** and **Trout
 *   **Python** (v3.9 or higher)
 *   **Pip** & **Virtualenv** (Recommended)
 
-### 2. Setup Python Environment & Train
+### 2. Quick start: run the dashboard (no training needed)
+The trained weights (`ml/weights/densenet.pth`, `ml/weights/mobilenet.pth`) are in the repo, so the web app works right after cloning.
 ```bash
+git clone <repo-url> && cd MachineLearning
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate          # keep it active: the dashboard calls `python3`
 pip install -r ml/requirements.txt
 
+cd dashboard
+npm install
+npm run dev                       # run from inside dashboard/
+```
+
+Optional, for the Gemini explanation and Q&A: create `dashboard/.env.local` with your own free key from [Google AI Studio](https://aistudio.google.com/apikey), then restart `npm run dev`.
+```
+GEMINI_API_KEY=your-key
+```
+Without a key the explanation falls back to the built-in Thai template and the Q&A box shows an error.
+
+### 3. Retrain (optional, needs the dataset)
+```bash
 # Put the dataset at Image/Salmon and Image/Trout, then:
 python ml/test_setup.py                  # quick sanity checks
 python ml/train.py --model all --quick   # smoke test (1+1 epochs, one seed)
 python ml/train.py --model all           # full run: 3 seeds per model
 ```
 
-### 3. Run the Dashboard
-```bash
-cd dashboard
-
-# Install dependencies
-npm install
-
-# Start the development server
-npm run dev
-```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
