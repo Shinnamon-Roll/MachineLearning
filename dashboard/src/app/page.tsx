@@ -65,7 +65,7 @@ type Prediction = {
   error?: string;
 };
 
-type Explanation = { summary?: string; error?: string };
+type Explanation = { summary?: string; source?: "gemini" | "template"; error?: string };
 
 type ChartPoint = Record<string, number>;
 
@@ -404,6 +404,9 @@ export default function Home() {
                 <div className="border border-neutral-800 px-5 py-4">
                   <p className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-neutral-500">
                     <MessageSquareText className="h-4 w-4" /> Explanation
+                    <span className="normal-case tracking-normal text-neutral-600">
+                      · {explanation.source === "gemini" ? "Gemini" : "Template"}
+                    </span>
                   </p>
                   <p className="whitespace-pre-line text-sm leading-relaxed text-neutral-200">{explanation.summary}</p>
                 </div>

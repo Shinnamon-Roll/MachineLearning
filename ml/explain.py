@@ -2,7 +2,8 @@
 
 Data-to-text generation: measure colour features of the fish flesh in the image,
 compare them with each class's average from the train split, then fill sentence
-templates. The text describes what the image looks like relative to typical
+templates. If GEMINI_API_KEY is set, Gemini rewrites that grounded summary into
+natural Thai; any failure falls back to the template text. The text describes what the image looks like relative to typical
 Salmon/Trout; it is not a readout of what the CNNs attended to.
 
     python ml/explain.py --build-stats                        # writes ml/feature_stats.json
@@ -10,7 +11,10 @@ Salmon/Trout; it is not a readout of what the CNNs attended to.
 """
 import argparse
 import json
+import os
+import ssl
 import sys
+import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -31,6 +35,17 @@ FEATURES = {
     "saturation": {"name": "ความสดของสี", "high": "สีเนื้อปลาสดกว่า", "low": "สีเนื้อปลาซีดกว่า"},
 }
 MODEL_NAMES = {"densenet": "DenseNet121", "mobilenet": "MobileNetV2"}
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_PROMPT = """คุณคือผู้ช่วยอธิบายผลการจำแนกภาพเนื้อปลา Salmon กับ Trout ให้คนทั่วไปอ่าน
+เรียบเรียงข้อเท็จจริงด้านล่างใหม่เป็นภาษาไทยที่เป็นธรรมชาติ 2-4 ประโยค เป็นย่อหน้าเดียว
+กฎ:
+- ใช้เฉพาะข้อมูลที่ให้มา ห้ามเพิ่มลักษณะ ตัวเลข หรือเหตุผลอื่นที่ไม่มีในข้อมูล
+- คงตัวเลขเปอร์เซ็นต์ความมั่นใจไว้ ส่วนค่าวัดสีไม่ต้องใส่ตัวเลขก็ได้
+- ถ้าข้อมูลบอกว่าผลยังไม่แน่นอนหรือโมเดลเห็นไม่ตรงกัน ต้องบอกด้วย
+- ไม่ใช้ markdown ไม่ใช้หัวข้อ
+
+ข้อเท็จจริง:
+{facts}"""
 
 
 def extract_features(image_bgr):
@@ -85,6 +100,27 @@ def describe(key, value, stats):
     return {"feature": key, "value": value, "leans": leans, "text": text}
 
 
+def gemini_rewrite(facts):
+    """Rewrite the template summary with Gemini; returns None when unavailable."""
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        return None
+    import certifi  # python.org builds on macOS ship without a CA bundle
+    body = {"contents": [{"parts": [{"text": GEMINI_PROMPT.format(facts=facts)}]}],
+            "generationConfig": {"temperature": 0.3}}
+    req = urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+        data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "x-goog-api-key": key})
+    try:
+        ctx = ssl.create_default_context(cafile=certifi.where())
+        with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
+            text = json.loads(r.read())["candidates"][0]["content"]["parts"][0]["text"].strip()
+        return text or None
+    except Exception as e:
+        print(f"Gemini failed, using template: {e}", file=sys.stderr)  # stderr: stdout must stay one JSON line
+        return None
+
+
 def explain(image_path, predictions, stats):
     ok = {k: p for k, p in predictions.items() if isinstance(p, dict) and p.get("class")}
     if not ok:
@@ -126,7 +162,9 @@ def explain(image_path, predictions, stats):
     if len(classes) > 1 or top < 75:
         parts.append("ผลนี้ยังไม่แน่นอน ควรตรวจสอบด้วยสายตาเพิ่มเติม")
 
-    return {"summary": "\n".join(parts), "features": described}
+    summary = "\n".join(parts)
+    rewritten = gemini_rewrite(summary)
+    return {"summary": rewritten or summary, "source": "gemini" if rewritten else "template", "features": described}
 
 
 if __name__ == "__main__":
