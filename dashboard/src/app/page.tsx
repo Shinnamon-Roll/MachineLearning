@@ -403,7 +403,7 @@ export default function Home() {
               {explanation?.summary && (
                 <div className="border border-neutral-800 px-5 py-4">
                   <p className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-neutral-500">
-                    <MessageSquareText className="h-4 w-4" /> Explanation (auto-generated)
+                    <MessageSquareText className="h-4 w-4" /> Explanation
                   </p>
                   <p className="whitespace-pre-line text-sm leading-relaxed text-neutral-200">{explanation.summary}</p>
                 </div>
