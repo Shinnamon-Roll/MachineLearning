@@ -88,3 +88,4 @@ Trash/
 
 # Browser automation artifacts
 .playwright-mcp/
+/Image_split/
