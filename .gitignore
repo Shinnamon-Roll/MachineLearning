@@ -45,8 +45,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -72,9 +72,9 @@ venv.bak/
 model.safetensors
 
 # Dataset
-Image/
-data/
-dataset/
+/Image/
+/data/
+/dataset/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -85,3 +85,7 @@ dataset/
 
 # System
 Trash/
+
+# Browser automation artifacts
+.playwright-mcp/
+/Image_split/
