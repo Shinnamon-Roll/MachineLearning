@@ -38,6 +38,8 @@ Python scripts resolve paths from their own location, so they run from any cwd.
 
 **Inference path**: `dashboard/src/app/api/predict/route.ts` saves the upload to `dashboard/public/uploads/`, then runs `python3 ../ml/inference.py <file> --model <name>` via `execFile` (no shell) for both models in parallel. `inference.py` must print exactly one JSON line — `{class, confidence, probabilities: {Salmon, Trout}}` or `{error}`; extra stdout breaks `JSON.parse`. Run `npm run dev` from inside `dashboard/` since the route resolves `../ml` from `process.cwd()`.
 
+**Explanation (NLP)**: after both predictions the route runs `ml/explain.py <file> --predictions '<json>'`, which prints `{summary, features}` — a Thai template-generated summary comparing the image's flesh colour (brightness, redness, saturation) with per-class train-split averages in `ml/feature_stats.json` (rebuild with `--build-stats` if the splits change). It describes the image, not CNN attention. A failure there leaves `explanation: null` and the predictions still show.
+
 ## Gotchas
 
 - Class index order is fixed: `0 = Salmon`, `1 = Trout` (`CLASSES` in `ml/config.py`).

@@ -25,7 +25,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Check, Database, Gauge, Layers, SlidersHorizontal, Target, TriangleAlert, Zap } from "lucide-react";
+import { Check, Database, Gauge, Layers, MessageSquareText, SlidersHorizontal, Target, TriangleAlert, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Metrics = {
@@ -64,6 +64,8 @@ type Prediction = {
   probabilities: Record<string, number>;
   error?: string;
 };
+
+type Explanation = { summary?: string; error?: string };
 
 type ChartPoint = Record<string, number>;
 
@@ -222,6 +224,7 @@ export default function Home() {
   const [predictionM1, setPredictionM1] = useState<Prediction | null>(null);
   const [predictionM2, setPredictionM2] = useState<Prediction | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [explanation, setExplanation] = useState<Explanation | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -262,6 +265,7 @@ export default function Home() {
     setIsProcessing(true);
     setPredictionM1(null);
     setPredictionM2(null);
+    setExplanation(null);
     setPreviewImage(URL.createObjectURL(files[0]));
 
     const formData = new FormData();
@@ -271,6 +275,7 @@ export default function Home() {
       const data = await response.json();
       setPredictionM1(data.model1 ?? { error: "No result" });
       setPredictionM2(data.model2 ?? { error: "No result" });
+      setExplanation(data.explanation ?? null);
     } catch (error) {
       console.error("Prediction Error:", error);
       setPredictionM1({ error: "Request failed" } as Prediction);
@@ -395,6 +400,14 @@ export default function Home() {
                   </>
                 )}
               </div>
+              {explanation?.summary && (
+                <div className="border border-neutral-800 px-5 py-4">
+                  <p className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-neutral-500">
+                    <MessageSquareText className="h-4 w-4" /> Explanation (auto-generated)
+                  </p>
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-neutral-200">{explanation.summary}</p>
+                </div>
+              )}
             </div>
           </div>
         </section>

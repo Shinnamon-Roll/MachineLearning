@@ -49,12 +49,27 @@ export async function POST(req: NextRequest) {
 
     const [m1Result, m2Result] = await Promise.all([runModel("densenet"), runModel("mobilenet")]);
 
+    // Thai text summary of both results; a failure here must not hide the predictions
+    let explanation = null;
+    try {
+      const { stdout } = await execFileAsync("python3", [
+        path.join(mlDir, "explain.py"),
+        filepath,
+        "--predictions",
+        JSON.stringify({ densenet: m1Result, mobilenet: m2Result }),
+      ]);
+      explanation = JSON.parse(stdout.trim());
+    } catch (error) {
+      console.error("Explain Error:", error);
+    }
+
     // Cleanup uploaded file (optional, keeping it for now for debugging or display)
     // fs.unlinkSync(filepath);
 
     return NextResponse.json({
       model1: m1Result,
       model2: m2Result,
+      explanation,
       image_url: `/uploads/${filename}`
     });
 
