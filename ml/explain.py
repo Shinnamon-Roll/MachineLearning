@@ -14,6 +14,8 @@ import json
 import os
 import ssl
 import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -35,7 +37,7 @@ FEATURES = {
     "saturation": {"name": "ความสดของสี", "high": "สีเนื้อปลาสดกว่า", "low": "สีเนื้อปลาซีดกว่า"},
 }
 MODEL_NAMES = {"densenet": "DenseNet121", "mobilenet": "MobileNetV2"}
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 GEMINI_PROMPT = """คุณคือผู้ช่วยอธิบายผลการจำแนกภาพเนื้อปลา Salmon กับ Trout ให้คนทั่วไปอ่าน
 เรียบเรียงข้อเท็จจริงด้านล่างใหม่เป็นภาษาไทยที่เป็นธรรมชาติ 2-4 ประโยค เป็นย่อหน้าเดียว
 กฎ:
@@ -111,13 +113,20 @@ def gemini_rewrite(facts):
     req = urllib.request.Request(
         f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
         data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "x-goog-api-key": key})
-    try:
-        ctx = ssl.create_default_context(cafile=certifi.where())
-        with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
-            text = json.loads(r.read())["candidates"][0]["content"]["parts"][0]["text"].strip()
-        return text or None
-    except Exception as e:
-        print(f"Gemini failed, using template: {e}", file=sys.stderr)  # stderr: stdout must stay one JSON line
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    for attempt in range(3):  # free tier often answers 503 "overloaded" for a moment
+        try:
+            with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
+                text = json.loads(r.read())["candidates"][0]["content"]["parts"][0]["text"].strip()
+            return text or None
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 500, 503) and attempt < 2:
+                time.sleep(1 + attempt)
+                continue
+            err = e
+        except Exception as e:
+            err = e
+        print(f"Gemini failed, using template: {err}", file=sys.stderr)  # stderr: stdout must stay one JSON line
         return None
 
 

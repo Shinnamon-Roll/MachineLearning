@@ -52,12 +52,13 @@ export async function POST(req: NextRequest) {
     // Thai text summary of both results; a failure here must not hide the predictions
     let explanation = null;
     try {
-      const { stdout } = await execFileAsync("python3", [
+      const { stdout, stderr } = await execFileAsync("python3", [
         path.join(mlDir, "explain.py"),
         filepath,
         "--predictions",
         JSON.stringify({ densenet: m1Result, mobilenet: m2Result }),
       ]);
+      if (stderr.trim()) console.warn("Explain:", stderr.trim());
       explanation = JSON.parse(stdout.trim());
     } catch (error) {
       console.error("Explain Error:", error);
