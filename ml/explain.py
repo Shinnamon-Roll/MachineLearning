@@ -38,11 +38,17 @@ FEATURES = {
 }
 MODEL_NAMES = {"densenet": "DenseNet121", "mobilenet": "MobileNetV2"}
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
+GEMINI_FALLBACK_MODEL = "gemini-flash-lite-latest"
 GEMINI_PROMPT = """คุณคือผู้ช่วยอธิบายผลการจำแนกภาพเนื้อปลา Salmon กับ Trout ให้คนทั่วไปอ่าน
-เรียบเรียงข้อเท็จจริงด้านล่างใหม่เป็นภาษาไทยที่เป็นธรรมชาติ 2-4 ประโยค เป็นย่อหน้าเดียว
+เรียบเรียงข้อเท็จจริงด้านล่างใหม่เป็นภาษาไทยที่เป็นธรรมชาติ 3 ย่อหน้า ย่อหน้าละ 2-4 ประโยค คั่นย่อหน้าด้วยบรรทัดว่าง
+- ย่อหน้า 1: ผลการทำนายของแต่ละโมเดลและความมั่นใจ และบอกว่าโมเดลเห็นตรงกันหรือไม่
+- ย่อหน้า 2: ลักษณะสีของเนื้อปลาทีละข้อ อธิบายว่าค่าที่วัดได้เทียบกับค่าเฉลี่ยของ Salmon และ Trout จากภาพที่ใช้ฝึกแล้วเป็นอย่างไร และข้อไหนสนับสนุนหรือขัดแย้งกับคำตอบ
+- ย่อหน้า 3: สรุประดับความมั่นใจโดยรวม และคำแนะนำต่อผู้ใช้
 กฎ:
 - ใช้เฉพาะข้อมูลที่ให้มา ห้ามเพิ่มลักษณะ ตัวเลข หรือเหตุผลอื่นที่ไม่มีในข้อมูล
-- คงตัวเลขเปอร์เซ็นต์ความมั่นใจไว้ ส่วนค่าวัดสีไม่ต้องใส่ตัวเลขก็ได้
+- คงตัวเลขเปอร์เซ็นต์ความมั่นใจและค่าวัดสีไว้
+- ห้ามเปรียบเทียบตัวเลขเองหรือใช้คำว่า สูงกว่า/ต่ำกว่า/ใกล้เคียง กับค่าเฉลี่ย ให้ใช้คำบรรยายตามข้อมูลเท่านั้น เช่น "เข้มกว่าค่ากลางพอสมควร"
+- เขียนชื่อปลาเป็นภาษาอังกฤษ Salmon และ Trout เสมอ
 - ถ้าข้อมูลบอกว่าผลยังไม่แน่นอนหรือโมเดลเห็นไม่ตรงกัน ต้องบอกด้วย
 - ไม่ใช้ markdown ไม่ใช้หัวข้อ
 
@@ -108,26 +114,31 @@ def gemini_rewrite(facts):
     if not key:
         return None
     import certifi  # python.org builds on macOS ship without a CA bundle
-    body = {"contents": [{"parts": [{"text": GEMINI_PROMPT.format(facts=facts)}]}],
-            "generationConfig": {"temperature": 0.3}}
-    req = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
-        data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "x-goog-api-key": key})
     ctx = ssl.create_default_context(cafile=certifi.where())
-    for attempt in range(3):  # free tier often answers 503 "overloaded" for a moment
-        try:
-            with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
-                text = json.loads(r.read())["candidates"][0]["content"]["parts"][0]["text"].strip()
-            return text or None
-        except urllib.error.HTTPError as e:
-            if e.code in (429, 500, 503) and attempt < 2:
+    body = json.dumps({"contents": [{"parts": [{"text": GEMINI_PROMPT.format(facts=facts)}]}],
+                       "generationConfig": {"temperature": 0.2}}).encode()
+    err = None
+    # Free tier often answers 503 "overloaded": retry, then try the lighter model.
+    for model in dict.fromkeys([GEMINI_MODEL, GEMINI_FALLBACK_MODEL]):
+        req = urllib.request.Request(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            data=body, headers={"Content-Type": "application/json", "x-goog-api-key": key})
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(req, timeout=20, context=ctx) as r:
+                    text = json.loads(r.read())["candidates"][0]["content"]["parts"][0]["text"].strip()
+                if text:
+                    return text
+            except urllib.error.HTTPError as e:
+                err = f"{model}: {e}"
+                if e.code not in (429, 500, 503):
+                    break  # bad key / unknown model: retrying won't help
                 time.sleep(1 + attempt)
-                continue
-            err = e
-        except Exception as e:
-            err = e
-        print(f"Gemini failed, using template: {err}", file=sys.stderr)  # stderr: stdout must stay one JSON line
-        return None
+            except Exception as e:
+                err = f"{model}: {e}"
+                break
+    print(f"Gemini failed, using template: {err}", file=sys.stderr)  # stderr: stdout must stay one JSON line
+    return None
 
 
 def explain(image_path, predictions, stats):
