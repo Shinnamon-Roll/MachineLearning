@@ -25,7 +25,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Check, Database, Gauge, Layers, MessageSquareText, SlidersHorizontal, Target, TriangleAlert, Zap } from "lucide-react";
+import { Check, Database, Gauge, Layers, MessageSquareText, MessagesSquare, Send, SlidersHorizontal, Target, TriangleAlert, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Metrics = {
@@ -65,7 +65,10 @@ type Prediction = {
   error?: string;
 };
 
-type Explanation = { summary?: string; source?: "gemini" | "template"; error?: string };
+type Explanation = { summary?: string; facts?: string; source?: "gemini" | "template"; error?: string };
+type ChatTurn = { role: "user" | "model"; text: string };
+
+const SUGGESTED_QUESTIONS = ["ทำไมถึงได้คำตอบนี้?", "ควรเชื่อผลนี้แค่ไหน?", "สองโมเดลต่างกันอย่างไร?"];
 
 type ChartPoint = Record<string, number>;
 
@@ -225,6 +228,9 @@ export default function Home() {
   const [predictionM2, setPredictionM2] = useState<Prediction | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<Explanation | null>(null);
+  const [chat, setChat] = useState<ChatTurn[]>([]);
+  const [question, setQuestion] = useState("");
+  const [isAsking, setIsAsking] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -266,6 +272,7 @@ export default function Home() {
     setPredictionM1(null);
     setPredictionM2(null);
     setExplanation(null);
+    setChat([]);
     setPreviewImage(URL.createObjectURL(files[0]));
 
     const formData = new FormData();
@@ -282,6 +289,28 @@ export default function Home() {
       setPredictionM2({ error: "Request failed" } as Prediction);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const askQuestion = async (text: string) => {
+    const q = text.trim();
+    if (!q || isAsking) return;
+    const history = chat;
+    setChat([...history, { role: "user", text: q }]);
+    setQuestion("");
+    setIsAsking(true);
+    try {
+      const response = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q, facts: explanation?.facts ?? explanation?.summary ?? "", history }),
+      });
+      const data = await response.json();
+      setChat((c) => [...c, { role: "model", text: data.answer ?? data.error ?? "ไม่มีคำตอบ" }]);
+    } catch {
+      setChat((c) => [...c, { role: "model", text: "ส่งคำถามไม่สำเร็จ ลองใหม่อีกครั้ง" }]);
+    } finally {
+      setIsAsking(false);
     }
   };
 
@@ -409,6 +438,67 @@ export default function Home() {
                     </span>
                   </p>
                   <p className="whitespace-pre-line text-sm leading-relaxed text-neutral-200">{explanation.summary}</p>
+                </div>
+              )}
+              {explanation?.summary && (
+                <div className="border border-neutral-800 px-5 py-4">
+                  <p className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-neutral-500">
+                    <MessagesSquare className="h-4 w-4" /> Ask about this result
+                  </p>
+                  {chat.length > 0 && (
+                    <div className="mb-3 flex max-h-80 flex-col gap-2 overflow-y-auto" aria-live="polite">
+                      {chat.map((t, i) => (
+                        <p
+                          key={i}
+                          className={cn(
+                            "max-w-[85%] whitespace-pre-line px-3 py-2 text-sm leading-relaxed",
+                            t.role === "user" ? "self-end bg-white text-black" : "self-start border border-neutral-800 text-neutral-200"
+                          )}
+                        >
+                          {t.text}
+                        </p>
+                      ))}
+                      {isAsking && <p className="self-start px-3 py-2 text-sm text-neutral-500">กำลังคิด…</p>}
+                    </div>
+                  )}
+                  {chat.length === 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {SUGGESTED_QUESTIONS.map((q) => (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => askQuestion(q)}
+                          className="border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:border-white hover:text-white"
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <form
+                    className="flex gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      askQuestion(question);
+                    }}
+                  >
+                    <input
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      maxLength={500}
+                      placeholder="พิมพ์คำถาม เช่น ถ้าเป็น Salmon จะต่างกันตรงไหน"
+                      aria-label="Question about this result"
+                      className="min-w-0 flex-1 border border-neutral-700 bg-transparent px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-white focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isAsking || !question.trim()}
+                      aria-label="Send question"
+                      className="flex items-center gap-1.5 bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-40"
+                    >
+                      <Send className="h-4 w-4" />
+                    </button>
+                  </form>
                 </div>
               )}
             </div>

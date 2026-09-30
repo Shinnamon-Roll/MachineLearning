@@ -184,7 +184,7 @@ def explain(image_path, predictions, stats):
 
     summary = "\n".join(parts)
     rewritten = gemini_rewrite(summary)
-    return {"summary": rewritten or summary, "source": "gemini" if rewritten else "template", "features": described}
+    return {"summary": rewritten or summary, "facts": summary, "source": "gemini" if rewritten else "template", "features": described}
 
 
 if __name__ == "__main__":
